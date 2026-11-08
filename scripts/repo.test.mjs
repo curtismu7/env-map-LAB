@@ -94,7 +94,7 @@ test('no shipped text carries a non-reserved host, a real-looking UUID or an AI-
       if (credit.test(t)) hits.push(`${rel}: attribution`);
       if (UUID.test(t) && !/\.test\.(m?js|jsx)$/.test(name)) hits.push(`${rel}: uuid`);
       if (/\.(md|ya?ml)$/.test(name) || name.endsWith('.json') || name === '.env.example') {
-        const bad = scanHosts(t).map((h) => h.replace(/[`'")\]]+$/, '')).filter((h) => !/^(github\.com|registry\.npmjs\.org|local\.ping-devops\.com|env-map-lab\.local\.ping-devops\.com)$/.test(h) && !isLoopbackHost(h) && h !== '0.0.0.0');
+        const bad = scanHosts(t).map((h) => h.replace(/[`'")\]}]+$/, '').replace(/:\d+$/, '')).filter((h) => !/^(github\.com|registry\.npmjs\.org|local\.ping-devops\.com|env-map-lab\.local\.ping-devops\.com)$/.test(h) && !isLoopbackHost(h) && h !== '0.0.0.0');
         if (bad.length) hits.push(`${rel}: ${bad.join(', ')}`);
       }
     }

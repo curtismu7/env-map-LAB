@@ -218,3 +218,12 @@ test('netguard: a whole session of API calls in both modes makes zero outbound a
     assert.deepEqual(g.attempts, []);
   } finally { g.restore(); rm(dir); }
 });
+
+test('GET /api/shelf returns the configured SHELF_URL with no web build (trailing slash trimmed), and a POST to it is not 200', async () => {
+  await withServer(async (url) => {
+    const r = await get(url, '/api/shelf');
+    assert.equal(r.status, 200);
+    assert.deepEqual(await r.json(), { shelfUrl: 'https://shelf.example:8443' });
+    assert.notEqual((await post(url, '/api/shelf', {})).status, 200);
+  }, { env: { ...NOENV, SHELF_URL: 'https://shelf.example:8443/' } });
+});
