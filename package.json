@@ -1,0 +1,23 @@
+{
+  "name": "env-map-lab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Where Everything Runs: a map of where a team's software runs (a local machine, Kubernetes namespaces, SaaS services) as a diagram and a table, with a computed what-if. Mock shows a made-up sample snapshot; Real shows a snapshot file produced by the owner-run read-only collector.",
+  "license": "MIT",
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "start": "npm start -w server",
+    "build": "npm run build -w web",
+    "test": "npm test -w server && npm test -w web && node --test scripts/*.test.mjs",
+    "doctor": "node scripts/doctor.mjs",
+    "reset": "node scripts/reset.mjs",
+    "prepare": "git config core.hooksPath .githooks || true"
+  }
+}

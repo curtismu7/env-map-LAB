@@ -1,0 +1,85 @@
+{
+  "schema": "env-map/1",
+  "takenAt": "2026-11-08T12:00:00Z",
+  "environments": [
+    {
+      "id": "laptop",
+      "label": "Laptop (Docker)",
+      "kind": "local",
+      "workloads": [
+        { "name": "portal-ui", "kind": "container", "ready": 1, "want": 1, "group": "Web front ends", "role": "frontend", "roleSource": "name", "ports": [4100] },
+        { "name": "log-viewer-ui", "kind": "container", "ready": 1, "want": 1, "group": "Web front ends", "role": "frontend", "roleSource": "name", "ports": [4110] },
+        { "name": "metrics-grafana", "kind": "container", "ready": 1, "want": 1, "group": "Web front ends", "role": "frontend", "roleSource": "name", "ports": [3300] },
+        { "name": "orders-api", "kind": "container", "ready": 1, "want": 1, "group": "Services", "role": "server", "roleSource": "name", "ports": [4101] },
+        { "name": "search-api", "kind": "container", "ready": 1, "want": 1, "group": "Services", "role": "server", "roleSource": "name", "ports": [4102] },
+        { "name": "report-worker", "kind": "container", "ready": 1, "want": 1, "group": "Services", "role": "server", "roleSource": "name" },
+        { "name": "auth-proxy", "kind": "container", "ready": 1, "want": 1, "group": "Services", "role": "server", "roleSource": "name", "ports": [4180] },
+        { "name": "batch-runner", "kind": "container", "ready": 0, "want": 0, "group": "Services", "role": "server", "roleSource": "name" },
+        { "name": "db-postgres", "kind": "container", "ready": 1, "want": 1, "group": "Data", "role": "server", "roleSource": "declared", "ports": [5433] },
+        { "name": "cache-redis", "kind": "container", "ready": 1, "want": 1, "group": "Data", "role": "server", "roleSource": "declared" },
+        { "name": "notes-lab", "kind": "container", "ready": 1, "want": 1, "group": "Labs", "role": "lab", "roleSource": "name", "ports": [7810] },
+        { "name": "sandbox-lab", "kind": "container", "ready": 1, "want": 1, "group": "Labs", "role": "lab", "roleSource": "name", "ports": [7811] },
+        { "name": "mock-idp-lab", "kind": "container", "ready": 0, "want": 0, "group": "Labs", "role": "lab", "roleSource": "name" },
+        { "name": "old-demo-lab", "kind": "container", "ready": 0, "want": 0, "group": "Labs", "role": "lab", "roleSource": "name" }
+      ]
+    },
+    {
+      "id": "team-a",
+      "label": "Namespace team-a",
+      "kind": "k8s",
+      "context": "cluster-one",
+      "workloads": [
+        { "name": "orders-api", "kind": "deployment", "ready": 2, "want": 2, "group": "Orders", "role": "server", "roleSource": "name", "hosts": ["orders-api.team-a.example"] },
+        { "name": "orders-ui", "kind": "deployment", "ready": 2, "want": 2, "group": "Orders", "role": "frontend", "roleSource": "name", "hosts": ["orders.team-a.example"] },
+        { "name": "orders-db", "kind": "statefulset", "ready": 1, "want": 1, "group": "Orders", "role": "server", "roleSource": "name" },
+        { "name": "edge-gateway", "kind": "deployment", "ready": 2, "want": 2, "group": "Gateway", "role": "server", "roleSource": "declared", "hosts": ["gateway.team-a.example"] },
+        { "name": "auth-proxy", "kind": "deployment", "ready": 1, "want": 1, "group": "Gateway", "role": "server", "roleSource": "name" },
+        { "name": "metrics-prometheus", "kind": "statefulset", "ready": 1, "want": 1, "group": "Observability", "role": "server", "roleSource": "name" },
+        { "name": "metrics-grafana", "kind": "deployment", "ready": 1, "want": 1, "group": "Observability", "role": "frontend", "roleSource": "name", "hosts": ["metrics.team-a.example"] }
+      ]
+    },
+    {
+      "id": "team-b",
+      "label": "Namespace team-b",
+      "kind": "k8s",
+      "context": "cluster-one",
+      "workloads": [
+        { "name": "payments-api", "kind": "deployment", "ready": 0, "want": 0, "group": "Payments", "role": "server", "roleSource": "name" },
+        { "name": "payments-ui", "kind": "deployment", "ready": 0, "want": 0, "group": "Payments", "role": "frontend", "roleSource": "name" },
+        { "name": "ledger-db", "kind": "statefulset", "ready": 2, "want": 3, "group": "Payments", "role": "server", "roleSource": "name" },
+        { "name": "catalog-api", "kind": "deployment", "ready": 1, "want": 1, "group": "Catalog", "role": "server", "roleSource": "name", "hosts": ["catalog-api.team-b.example"] },
+        { "name": "catalog-ui", "kind": "deployment", "ready": 1, "want": 1, "group": "Catalog", "role": "frontend", "roleSource": "name", "hosts": ["catalog.team-b.example"] },
+        { "name": "catalog-lab", "kind": "deployment", "ready": 1, "want": 1, "group": "Labs", "role": "lab", "roleSource": "name", "hosts": ["catalog-lab.team-b.example"] },
+        { "name": "legacy-admin-ui", "kind": "deployment", "ready": 0, "want": 0, "group": "Legacy", "role": "frontend", "roleSource": "name" }
+      ]
+    },
+    {
+      "id": "idp",
+      "label": "Sample identity provider",
+      "kind": "saas",
+      "workloads": [
+        { "name": "sign-in", "kind": "service", "role": "external", "roleSource": "declared", "hosts": ["idp.example"] },
+        { "name": "directory", "kind": "service", "role": "external", "roleSource": "declared", "hosts": ["idp.example"] }
+      ]
+    },
+    {
+      "id": "mail",
+      "label": "Sample email service",
+      "kind": "saas",
+      "workloads": [
+        { "name": "send", "kind": "service", "role": "external", "roleSource": "declared", "hosts": ["mail.example"] }
+      ]
+    }
+  ],
+  "links": [
+    { "from": "laptop/portal-ui", "to": "team-a/orders-api", "label": "HTTPS API calls", "source": "seen" },
+    { "from": "laptop/portal-ui", "to": "idp/sign-in", "label": "Sign-in redirect", "source": "seen" },
+    { "from": "laptop/search-api", "to": "team-b/catalog-api", "label": "Catalog lookups", "source": "seen" },
+    { "from": "laptop/notes-lab", "to": "team-a/edge-gateway", "label": "Real-mode calls", "source": "configured" },
+    { "from": "team-a/edge-gateway", "to": "team-a/orders-api", "label": "Routes", "source": "seen" },
+    { "from": "team-a/orders-api", "to": "team-a/orders-db", "label": "SQL", "source": "seen" },
+    { "from": "team-a/orders-api", "to": "team-b/payments-api", "label": "Charges", "source": "configured" },
+    { "from": "team-a/orders-api", "to": "mail/send", "label": "Receipts", "source": "configured" },
+    { "from": "team-b/catalog-api", "to": "idp/directory", "label": "Token checks", "source": "seen" }
+  ]
+}
