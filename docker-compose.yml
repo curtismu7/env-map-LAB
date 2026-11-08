@@ -16,7 +16,7 @@ services:
       ENV_MAP_BIND: 0.0.0.0
       MODE: ${MODE:-mock}
       LAB_ALLOWED_HOSTS: ${LAB_ALLOWED_HOSTS:-env-map-lab.local.ping-devops.com}
-      SHELF_URL: ${SHELF_URL:-}
+      SHELF_URL: ${SHELF_URL:-http://127.0.0.1:4400}
     read_only: true
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
