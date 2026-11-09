@@ -336,11 +336,11 @@ describe("Landscape", () => {
     render(<App />);
     await waitFor(() => expect(titles()).toContain("Web front ends"));
     click(screen.getByTestId("detail-landscape"));
-    await waitFor(() => expect(window.location.hash).toBe("#/diagram/landscape"));
+    await waitFor(() => expect(window.location.hash).toBe("#/diagram"));
     expect(screen.getByTestId("detail-landscape")).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByTestId("detail-grouped")).toHaveAttribute("aria-pressed", "false");
     click(screen.getByTestId("detail-grouped"));
-    await waitFor(() => expect(window.location.hash).toBe("#/diagram"));
+    await waitFor(() => expect(window.location.hash).toBe("#/diagram/today"));
     expect(titles()).toContain("Web front ends");
   });
 });

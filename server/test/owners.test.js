@@ -59,3 +59,12 @@ test('traffic on a workload is validated and carried through; a bad one is refus
   const bad = parseSnapshot(JSON.stringify(snap({ environments: [{ id: 'e', label: 'E', kind: 'local', workloads: [{ name: 'w', traffic: { total: 'lots', routes: [] } }] }], links: [] })));
   assert.equal(bad.ok, false);
 });
+
+test('an owner of "both" lists the workload on each side, links to it land on its AI-DEMO2 copy, and the file validates', () => {
+  assert.equal(parseOwners('{"schema":"env-map-owners/1","owners":{"x":"both"}}').ok, true);
+  const { snapshot } = splitByOwner(base(), { guess: true, map: new Map([['muse-local', 'both']]) });
+  const names = (id) => snapshot.environments.find((e) => e.id === id).workloads.map((w) => w.name);
+  assert.ok(names('box--ai-demo2').includes('muse-local') && names('box--labs').includes('muse-local'));
+  assert.equal(snapshot.links[0].from, 'box--ai-demo2/muse-local');
+  assert.equal(parseSnapshot(JSON.stringify(snapshot)).ok, true);
+});

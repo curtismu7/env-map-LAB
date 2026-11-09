@@ -76,7 +76,7 @@ Caps: 64 KB, 8 flows, 40 hops and 80 steps per flow. A broken file is ignored wi
 { "schema": "env-map-owners/1", "guess": true, "owners": { "muse-local": "labs", "local/ai-demo-api-server": "ai-demo2" } }
 ```
 
-Keys are `<env id>/<name>` or a bare `<name>`; values are `ai-demo2` or `labs`. With `"guess": true`, anything not listed is assigned by name and the app says so: Docker group `ai-demo` or a name starting `ai-demo-` is AI-DEMO2, the rest are LAB apps; on Kubernetes a name with the word `lab` or `mock` is a LAB app, the rest AI-DEMO2. Flows are not split (their hops carry their own owner).
+Keys are `<env id>/<name>` or a bare `<name>`; values are `ai-demo2`, `labs` or `both` (a shared workload: listed on each side, links to it land on its AI-DEMO2 copy). With `"guess": true`, anything not listed is assigned by name and the app says so: Docker group `ai-demo` or a name starting `ai-demo-` is AI-DEMO2, the rest are LAB apps; on Kubernetes a name with the word `lab` or `mock` is a LAB app, the rest AI-DEMO2. Flows are not split (their hops carry their own owner).
 
 ## Observed traffic
 

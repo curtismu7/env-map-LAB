@@ -18,14 +18,18 @@ describe("default view", () => {
 });
 
 describe("routes", () => {
-  it("parses tab and view; anything else is the diagram, today", () => {
+  it("parses tab and view; anything else is the diagram Landscape", () => {
     expect(parseRoute("#/map/after")).toEqual({ tab: "map", view: "after" });
     expect(parseRoute("#map")).toEqual({ tab: "map", view: "today" });
     expect(parseRoute("#/diagram/after")).toEqual({ tab: "diagram", view: "after" });
-    expect(parseRoute("#/nope/x")).toEqual({ tab: "diagram", view: "today" });
-    expect(parseRoute("")).toEqual({ tab: "diagram", view: "today" });
+    expect(parseRoute("#/nope/x")).toEqual({ tab: "diagram", view: "landscape" });
     expect(routeHash({ tab: "map", view: "after" })).toBe("#/map/after");
-    expect(routeHash({ tab: "diagram", view: "today" })).toBe("#/diagram");
+    expect(routeHash({ tab: "diagram", view: "today" })).toBe("#/diagram/today");
+    expect(routeHash({ tab: "diagram", view: "landscape" })).toBe("#/diagram");
+    expect(parseRoute("#/diagram")).toEqual({ tab: "diagram", view: "landscape" });
+    expect(parseRoute("")).toEqual({ tab: "diagram", view: "landscape" });
+    expect(parseRoute("#/diagram/today")).toEqual({ tab: "diagram", view: "today" });
+    expect(parseRoute("#/map")).toEqual({ tab: "map", view: "today" });
   });
 });
 

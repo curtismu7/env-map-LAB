@@ -1,12 +1,17 @@
-// Hash routes: #/diagram, #/diagram/after, #/diagram/landscape (AI-DEMO2 and LAB apps, by tier), #/diagram/servers (one box per running server), #/map, #/map/after, #/flows, #/standalone, #/ai-demo2 (a leading # without a slash works too).
-// Anything else is the diagram, today. `stack` is which hops a flows tab keeps: undefined = all of them.
+// Hash routes. The diagram opens on the Landscape (the high level): #/diagram (or #/diagram/landscape). Down from there: #/diagram/today (Grouped),
+// #/diagram/servers (one box per running server), #/diagram/after (the what-if). The map: #/map (today), #/map/after. Flows: #/flows, #/standalone,
+// #/ai-demo2. A leading # without a slash works too; anything unknown is the Landscape. `stack` is which hops a flows tab keeps (undefined = all).
 const TABS = ["map", "flows", "standalone", "ai-demo2"];
+const DIAGRAM_VIEWS = ["today", "after", "servers", "landscape"];
 export function parseRoute(hash) {
   const parts = String(hash || "").replace(/^#\/?/, "").split("/");
   const tab = TABS.includes(parts[0]) ? parts[0] : "diagram";
-  const view = parts[1] === "after" && (tab === "diagram" || tab === "map") ? "after" : (parts[1] === "servers" || parts[1] === "landscape") && tab === "diagram" ? parts[1] : "today";
-  return { tab, view };
+  if (tab === "diagram") return { tab, view: DIAGRAM_VIEWS.includes(parts[1]) ? parts[1] : "landscape" };
+  return { tab, view: parts[1] === "after" && tab === "map" ? "after" : "today" };
 }
 export const isFlowTab = (tab) => tab === "flows" || tab === "standalone" || tab === "ai-demo2";
 export const stackOf = (tab) => (tab === "standalone" || tab === "ai-demo2" ? tab : undefined);
-export const routeHash = ({ tab, view }) => `#/${tab}${view === "after" && (tab === "diagram" || tab === "map") ? "/after" : (view === "servers" || view === "landscape") && tab === "diagram" ? `/${view}` : ""}`;
+export function routeHash({ tab, view }) {
+  if (tab === "diagram") return view === "landscape" ? "#/diagram" : `#/diagram/${view}`;
+  return `#/${tab}${tab === "map" && view === "after" ? "/after" : ""}`;
+}
