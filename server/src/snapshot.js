@@ -18,6 +18,7 @@ export const LIMITS = {
   maxLinks: 1000,
   maxPorts: 12,
   maxHosts: 12,
+  maxRoutes: 12,
   maxProblems: 20,
 };
 
@@ -122,7 +123,19 @@ export function parseSnapshot(text) {
             if (!Array.isArray(w.hosts) || w.hosts.length > LIMITS.maxHosts) bad(`${wat}.hosts must be a list of at most ${LIMITS.maxHosts}`);
             else for (const h of w.hosts) { if (typeof h === 'string' && h.length <= 253 && HOST.test(h)) hosts.push(h.toLowerCase()); else { bad(`${wat}.hosts holds a non-host`); break; } }
           }
-          if (name) workloads.push({ name, kind: wk, ready, want, group, role, roleSource, ports, hosts });
+          // Observed traffic (optional): where the numbers came from, a total, and the busiest routes.
+          let traffic;
+          if (w.traffic !== undefined) {
+            const t = w.traffic;
+            if (!isPlain(t) || !isInt(t.total, 1e12) || !Array.isArray(t.routes) || t.routes.length > LIMITS.maxRoutes) bad(`${wat}.traffic must be { source, total, routes: [...] } with at most ${LIMITS.maxRoutes} routes`);
+            else {
+              const routes = [];
+              for (const r of t.routes) { if (isPlain(r) && typeof r.label === 'string' && r.label.length >= 1 && r.label.length <= 100 && isInt(r.count, 1e12)) routes.push({ label: r.label, count: r.count }); else { bad(`${wat}.traffic.routes holds a bad entry`); break; } }
+              const src = text1(t.source, 40, `${wat}.traffic.source`);
+              traffic = { source: src || 'observed', total: t.total, routes };
+            }
+          }
+          if (name) workloads.push({ name, kind: wk, ready, want, group, role, roleSource, ports, hosts, ...(traffic ? { traffic } : {}) });
         });
       }
       if (id && kind && label) environments.push({ id, label, kind, context, workloads });

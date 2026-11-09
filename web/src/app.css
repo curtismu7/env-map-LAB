@@ -167,3 +167,10 @@ button[aria-pressed="true"]:hover:not(:disabled), button[aria-selected="true"]:h
 .namelist { list-style: none; margin: 4px 0; padding: 0; max-height: 15rem; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); }
 .namelist li { padding: 3px 8px; font-size: 0.78rem; border-bottom: 1px dotted var(--border); overflow-wrap: anywhere; }
 .namelist li:last-child { border-bottom: 0; }
+
+/* Observed traffic in the details panel */
+.traffic { display: block; margin-top: 2px; }
+.routes { list-style: none; margin: 2px 0 0; padding: 0; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); max-height: 12rem; overflow-y: auto; }
+.routes li { display: flex; justify-content: space-between; gap: 8px; padding: 2px 8px; font-size: 0.75rem; border-bottom: 1px dotted var(--border); }
+.routes li:last-child { border-bottom: 0; }
+.routes li span { overflow-wrap: anywhere; min-width: 0; }

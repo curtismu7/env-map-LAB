@@ -10,7 +10,7 @@
         { "name": "portal-ui", "kind": "container", "ready": 1, "want": 1, "group": "Web front ends", "role": "frontend", "roleSource": "name", "ports": [4100] },
         { "name": "log-viewer-ui", "kind": "container", "ready": 1, "want": 1, "group": "Web front ends", "role": "frontend", "roleSource": "name", "ports": [4110] },
         { "name": "metrics-grafana", "kind": "container", "ready": 1, "want": 1, "group": "Web front ends", "role": "frontend", "roleSource": "name", "ports": [3300] },
-        { "name": "orders-api", "kind": "container", "ready": 1, "want": 1, "group": "Services", "role": "server", "roleSource": "name", "ports": [4101] },
+        { "name": "orders-api", "kind": "container", "ready": 1, "want": 1, "group": "Services", "role": "server", "roleSource": "name", "ports": [4101], "traffic": { "source": "made-up sample", "total": 412, "routes": [{ "label": "GET /orders", "count": 300 }, { "label": "POST /orders", "count": 90 }, { "label": "GET /orders/:id 404", "count": 22 }] } },
         { "name": "search-api", "kind": "container", "ready": 1, "want": 1, "group": "Services", "role": "server", "roleSource": "name", "ports": [4102] },
         { "name": "report-worker", "kind": "container", "ready": 1, "want": 1, "group": "Services", "role": "server", "roleSource": "name" },
         { "name": "auth-proxy", "kind": "container", "ready": 1, "want": 1, "group": "Services", "role": "server", "roleSource": "name", "ports": [4180] },

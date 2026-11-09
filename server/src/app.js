@@ -12,6 +12,7 @@ import { modeFrom, realConfig } from './config.js';
 import { LIMITS } from './snapshot.js';
 import { MOCK_FILE, loadSnapshotFile } from './source.js';
 import { buildMap } from './view.js';
+import { loadOwners, splitByOwner } from './owners.js';
 import { MOCK_FLOWS_FILE, buildFlows, flowsFileFor, loadFlows } from './flows.js';
 import { mountShelfRoute } from './shelfLink.js';
 
@@ -72,7 +73,15 @@ export function createApp({ health = createHealth(), env = process.env, useSetti
     const loaded = cur.source === 'real' ? loadSnapshotFile(cur.file, { withOverrides: true }) : loadSnapshotFile(cur.file);
     if (!loaded.ok) return res.status(422).json({ error: 'snapshot_invalid', source: cur.source, problems: loaded.problems });
     const warnings = loaded.overridesProblem ? [`The roles file next to the snapshot is ignored: ${loaded.overridesProblem}.`] : [];
-    res.json({ source: cur.source, ...buildMap(loaded.snapshot, loaded.overrides), warnings });
+    // Real only: an owners file next to the snapshot splits each environment into AI-DEMO2 and LAB apps (two separate systems).
+    let snapshot = loaded.snapshot;
+    const o = cur.source === 'real' ? loadOwners(cur.file) : null;
+    if (o?.problem) warnings.push(`The owners file next to the snapshot is ignored: ${o.problem}.`);
+    else if (o) {
+      const sp = splitByOwner(snapshot, o); snapshot = sp.snapshot;
+      if (sp.guessed) warnings.push(`AI-DEMO2 and the LAB apps are shown apart. ${sp.guessed} workloads were assigned by name (unverified); set them in env-map.owners.json.`);
+    }
+    res.json({ source: cur.source, ...buildMap(snapshot, loaded.overrides), warnings });
   });
 
   // Flows: the person-written request paths, each hop looked up in the snapshot. Real reads env-map.flows.json beside the snapshot.

@@ -26,7 +26,7 @@ export function prepare(snapshot, overrides = new Map()) {
     id: e.id, label: e.label, kind: e.kind, context: e.context,
     workloads: e.workloads.map((w) => {
       const r = effectiveRole(e.id, e.kind, w, overrides);
-      const eff = { env: e.id, envLabel: e.label, envKind: e.kind, name: w.name, kind: w.kind, ready: w.ready, want: w.want, group: w.group, role: r.role, roleSource: r.roleSource, ports: w.ports, hosts: w.hosts };
+      const eff = { env: e.id, envLabel: e.label, envKind: e.kind, name: w.name, kind: w.kind, ready: w.ready, want: w.want, group: w.group, role: r.role, roleSource: r.roleSource, ports: w.ports, hosts: w.hosts, traffic: w.traffic };
       eff.state = stateOf(eff);
       return eff;
     }),
@@ -40,6 +40,7 @@ const clip = (s, n) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}...` : s);
 const compact = (item) => {
   const w = item.w;
   const o = { name: w.name, kind: w.kind, ready: w.ready, want: w.want, state: w.state, role: w.role, roleSource: w.roleSource, group: w.group, ports: w.ports, hosts: w.hosts };
+  if (w.traffic) o.traffic = w.traffic;
   if (item.movedFrom) o.movedFrom = item.movedFrom;
   if (item.plan) o.plan = item.plan;
   return o;
@@ -178,7 +179,7 @@ function serversView(prepared, snapshot, resolve) {
   const { regions, placement } = regionsFrom(prepared, itemsByEnv, 'servers');
   for (const r of regions) {
     r.columns = Math.max(1, Math.min(5, Math.ceil(r.cards.length / 14)));
-    for (const c of r.cards) c.subtitle = clip([...c.workloads[0].ports.map((p) => `:${p}`), ...c.workloads[0].hosts].join('  ') || c.workloads[0].kind, 90);
+    for (const c of r.cards) { const w0 = c.workloads[0]; c.subtitle = clip([...w0.ports.map((p) => `:${p}`), ...w0.hosts, ...(w0.traffic ? [`${w0.traffic.total} requests`] : [])].join('  ') || w0.kind, 90); }
   }
   const l = buildLinks(snapshot, resolve, placement, regions);
   return { name: 'servers', regions, links: l.links, linkStats: { resolved: l.links.length, unresolved: l.unresolved, dropped: l.dropped }, matrix: matrixOf(regions), summaries: summaryOf(regions), changes: null, notes: [] };

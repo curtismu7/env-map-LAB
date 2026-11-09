@@ -316,3 +316,16 @@ describe("Map environment cards", () => {
     expect(screen.getByTestId("env-laptop").textContent).not.toMatch(/\b1 servers\b/);
   });
 });
+
+describe("Observed traffic", () => {
+  it("a workload with traffic shows its request total and busiest routes in the details panel", async () => {
+    lab = await startLab();
+    render(<App />);
+    await waitFor(() => expect(titles()).toContain("Services"));
+    click(screen.getByText("Services"));
+    const t = await screen.findByTestId("traffic");
+    expect(t.textContent).toMatch(/412 requests seen/);
+    expect(t.textContent).toMatch(/GET \/orders/);
+    expect(t.textContent).toMatch(/GET \/orders\/:id 404/);
+  });
+});
