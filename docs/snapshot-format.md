@@ -83,3 +83,11 @@ Keys are `<env id>/<name>` or a bare `<name>`; values are `ai-demo2` or `labs`. 
 A workload may carry `traffic`: `{ "source": "prometheus", "total": 12358, "routes": [ { "label": "GET /orders 404", "count": 22 } ] }` (at most 12 routes, labels up to 100 characters). The details panel lists it, and the each-server view shows the request total.
 
 `node scripts/derive-traces.mjs -i SNAPSHOT` fills it from the local Prometheus (request counters of the API resource server, PingGateway routes, MCP gateway methods, LLM proxy) and Jaeger (span names such as `GET /api/admin/config`, health and metrics routes left out), GET requests to loopback only. It also adds `N traced calls` links when a Jaeger span's parent is in another service. Run it after `collect.sh` and `derive-links.mjs`; a rerun replaces its own traffic and links. Counts are what the stack has seen so far, not a rate, and tracing today crosses almost no service boundaries, so expect few traced links.
+
+## Hand-written links
+
+`env-map.links.json` next to the snapshot, read by `derive-links.mjs`, holds links for containers that are in no compose file (a plain `docker run`, like `muse-local`): `{ "schema": "env-map-links/1", "links": [ { "from": "local/muse-local", "to": "local/ai-demo-ping-gateway", "label": "calls :3036", "source": "seen" } ] }` (up to 200). A bad entry is dropped.
+
+## Views on the Diagram tab
+
+**Detail: Landscape / Grouped / Each running server.** Landscape is the high level: one box per owner (AI-DEMO2, LAB apps) across every machine and namespace, AI-DEMO2 grouped by tier (front ends, API and BFF, agents, gateways, MCP, identity and policy, data, observability), LAB apps by app, running things only, and one arrow per pair of cards labelled with how many links sit behind it. Click a card for its workloads and observed traffic. Grouped is the per-environment view; Each running server draws every box and every link. Without an owners file, Landscape is the same as Grouped.

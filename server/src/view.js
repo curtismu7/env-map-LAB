@@ -172,6 +172,66 @@ function todayView(prepared, snapshot, resolve) {
 
 const ref = (w, extra = {}) => ({ env: w.env, envLabel: w.envLabel, name: w.name, role: w.role, roleSource: w.roleSource, ...extra });
 
+// Landscape (the high level): one box per OWNER (AI-DEMO2, LAB apps) across every machine and namespace, cards by tier for AI-DEMO2 and by
+// app for the LAB apps, running things only, and one arrow per pair of cards with the number of links behind it. Without an owner split
+// (no owners file) there is nothing to merge, so it is the Today view.
+const TIERS = [
+  ['Observability', 8, /(loki|alloy|grafana|prometheus|alertmanager|jaeger|kibana|elasticsearch|promptfoo|tempo|vector|log-collector|nodesensor|siem)/],
+  ['Front ends', 0, /(^|-)(ui|frontend|spa|homepage|landing)(-|$)/],
+  ['Identity and policy', 5, /(pingfederate|authz|hitl|privilege|pingone|spire|authorize|jwks|jwt)/],
+  ['Gateways and proxies', 3, /(gateway|mcpgw|proxy)/],
+  ['MCP servers and tools', 4, /((^|-)mcp(-|$)|tika|brave|weather|code-search|everything)/],
+  ['Data and search', 6, /(opensearch|weaviate|redis|embeddings|postgres|(^|-)db(-|$))/],
+  ['Agents', 2, /(agent|langchain|llamaindex|mastra|openai|pydantic|workeragent|mainagent)/],
+  ['API and BFF', 1, /(api-server|api-resource|resource-server|demo-api|bff)/],
+];
+export function tierOf(name) {
+  const n = String(name).toLowerCase().replace(/^ai-demo-/, '');
+  for (const [title, rank, re] of TIERS) if (re.test(n)) return { key: `tier:${title}`, title, rank, off: false };
+  return { key: 'tier:Other', title: 'Other', rank: 9, off: false };
+}
+const OWNER_REGION = { 'ai-demo2': { label: 'AI-DEMO2', kind: 'local' }, labs: { label: 'LAB apps', kind: 'k8s' } };
+
+function landscapeView(prepared, snapshot, resolve, today) {
+  const ownerOf = (e) => { const i = e.id.lastIndexOf('--'); const o = i > 0 ? e.id.slice(i + 2) : ''; return OWNER_REGION[o] ? o : null; };
+  if (!prepared.some(ownerOf)) return { ...today, name: 'landscape' };
+  const groups = new Map();
+  for (const e of prepared) { const o = ownerOf(e); if (!o) continue; if (!groups.has(o)) groups.set(o, []); groups.get(o).push(e); }
+  const regions = []; const placement = new Map(); const where = new Map();
+  for (const o of Object.keys(OWNER_REGION)) {
+    const envs = groups.get(o); if (!envs) continue;
+    const items = [];
+    for (const e of envs) for (const w of e.workloads) {
+      if (w.state === 'off' || w.state === 'down') continue;
+      items.push({ w, card: o === 'ai-demo2' ? tierOf(w.name) : { key: `g:${rowLabel(w)}`, title: rowLabel(w), rank: 0, off: false } });
+      where.set(w, e.label.replace(/ \u00b7 .*$/, ''));
+    }
+    const pseudo = { id: o, label: OWNER_REGION[o].label, kind: OWNER_REGION[o].kind };
+    const built = buildCards(pseudo, items);
+    for (const [w, id] of built.placement) placement.set(w, id);
+    for (const c of built.cards) {
+      const by = new Map();
+      for (const w of c.workloads) { const e = envs.find((x) => x.workloads.some((y) => y.name === w.name && y.group === w.group)); const k = e ? e.label.replace(/ \u00b7 .*$/, '') : '?'; by.set(k, (by.get(k) || 0) + 1); }
+      c.subtitle = clip([...by].map(([k, n]) => `${k.replace(/^Namespace /, '')} ${n}`).join(' \u00b7 '), 90);
+    }
+    const count = items.length;
+    regions.push({ id: `R:${o}`, envId: o, label: pseudo.label, kind: pseudo.kind, context: undefined, subtitle: `${envs.map((e) => e.label.replace(/ \u00b7 .*$/, '')).join(', ')}. ${count} running.`, cards: built.cards });
+  }
+  // One arrow per pair of cards: how many links sit behind it, solid when any of them was seen.
+  const firstCardOf = new Map(regions.map((r) => [r.envId, r.cards[0]?.id]));
+  const pair = new Map(); let unresolved = 0; let dropped = 0;
+  for (const l of snapshot.links) {
+    const a = resolve(l.from, placement, firstCardOf); const b = resolve(l.to, placement, firstCardOf);
+    if (a === undefined || b === undefined) { unresolved++; continue; }
+    if (!a || !b) { dropped++; continue; }
+    if (a === b) continue;
+    const k = `${a}|${b}`; const p = pair.get(k) || { from: a, to: b, n: 0, seen: false };
+    p.n++; p.seen ||= l.source === 'seen'; pair.set(k, p);
+  }
+  const links = [...pair.values()].map((p, i) => ({ id: `e${i}`, from: p.from, to: p.to, label: `${p.n} link${p.n === 1 ? '' : 's'}`, source: p.seen ? 'seen' : 'configured' }));
+  return { name: 'landscape', regions, links, linkStats: { resolved: links.length, unresolved, dropped }, matrix: matrixOf(regions), summaries: summaryOf(regions), changes: null, notes: [] };
+}
+
 // One box per RUNNING workload (stopped and scaled-to-0 ones are left out), so each server's own ports, hosts and calls are visible.
 // Regions with many boxes get a column count so the layout can lay them out as a grid.
 function serversView(prepared, snapshot, resolve) {
@@ -251,6 +311,6 @@ export function buildMap(snapshot, overrides = new Map()) {
   return {
     schema: snapshot.schema, takenAt: snapshot.takenAt,
     counts: { environments: prepared.length, workloads: all.length, links: snapshot.links.length, byName: all.filter((w) => w.roleSource === 'name').length, overridden: all.filter((w) => w.roleSource === 'override').length },
-    views: { today, after, servers: serversView(prepared, snapshot, resolve) },
+    views: { today, after, servers: serversView(prepared, snapshot, resolve), landscape: landscapeView(prepared, snapshot, resolve, today) },
   };
 }

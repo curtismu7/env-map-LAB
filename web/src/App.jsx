@@ -91,7 +91,8 @@ export default function App() {
           </div>
           <span className="spacer" />
           {route.tab === "diagram" && <span className="seg" role="group" aria-label="Detail">
-            <button type="button" aria-pressed={route.view !== "servers"} data-testid="detail-grouped" onClick={() => go({ view: route.view === "servers" ? "today" : route.view })} title="Boxes grouped by role or compose project">Grouped</button>
+            <button type="button" aria-pressed={route.view === "landscape"} data-testid="detail-landscape" onClick={() => go({ view: "landscape" })} title="The high level: AI-DEMO2 by tier and the LAB apps, one arrow per pair with its link count">Landscape</button>
+            <button type="button" aria-pressed={route.view !== "servers" && route.view !== "landscape"} data-testid="detail-grouped" onClick={() => go({ view: route.view === "servers" || route.view === "landscape" ? "today" : route.view })} title="Boxes grouped by role or compose project">Grouped</button>
             <button type="button" aria-pressed={route.view === "servers"} data-testid="detail-servers" onClick={() => go({ view: "servers" })} title="One box for each running server, with the calls between them">Each running server</button>
           </span>}
           {!isFlowTab(route.tab) && <span className="seg" role="group" aria-label="Which arrangement">

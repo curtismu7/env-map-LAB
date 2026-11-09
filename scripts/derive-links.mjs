@@ -6,6 +6,8 @@
 //  1. Compose files: a service's `depends_on` (source "configured", dashed) and every http(s)://host[:port] in its block
 //     (source "seen", solid) whose host is another compose service, or localhost / 127.0.0.1 / host.docker.internal with the published
 //     port of another container. Compose service -> container name comes from `docker ps -a` labels (names only).
+//  3. env-map.links.json next to the snapshot (optional, hand-written): { "schema": "env-map-links/1", "links": [ { "from", "to", "label", "source" } ] },
+//     for containers that are in no compose file (a plain `docker run`, like muse-local). Merged after the derived ones, up to 200 entries.
 //  2. Kubernetes, per CONTEXT/NAMESPACE: `kubectl get deploy,sts` printing each workload's literal env `.value` fields only. Values
 //     are kept ONLY if they are an http(s) URL whose host is a Service/workload name in that namespace (name, name.ns, name.ns.svc...)
 //     or a host unique to one workload in the snapshot. Every other value (tokens, passwords, anything) is dropped in memory here and is
@@ -57,6 +59,15 @@ export function k8sEnvUrls(text) {
     out.push({ name, urls });
   }
   return out;
+}
+
+// The hand-written links file beside the snapshot -> [{ from, to, label, source }] ([] when absent or broken).
+export function loadExtraLinks(snapshotFile) {
+  let j; try { j = JSON.parse(fs.readFileSync(path.join(path.dirname(snapshotFile), 'env-map.links.json'), 'utf8')); } catch { return []; }
+  if (!j || j.schema !== 'env-map-links/1' || !Array.isArray(j.links)) return [];
+  const ok = (v, n) => typeof v === 'string' && v.length >= 1 && v.length <= n;
+  return j.links.slice(0, 200).filter((l) => l && ok(l.from, 250) && ok(l.to, 250) && (l.label === undefined || ok(l.label, 120)) && (l.source === 'seen' || l.source === 'configured'))
+    .map((l) => ({ from: l.from, to: l.to, label: l.label ?? '', source: l.source }));
 }
 
 export function deriveLinks({ snapshot, composes = [], containerOf = () => null, k8s = [] }) {
@@ -144,12 +155,15 @@ function main(argv) {
     if (t === null) { console.error(`derive-links: kubectl could not read ${spec}; skipped`); continue; }
     k8s.push({ env: snapshot.environments.find((e) => e.context === ctx && e.id === ns)?.id || ns, workloads: k8sEnvUrls(t) });
   }
-  const { links, stats } = deriveLinks({ snapshot, composes, containerOf: (p, s) => labels.get(`${p}/${s}`) || null, k8s });
+  const derived = deriveLinks({ snapshot, composes, containerOf: (p, s) => labels.get(`${p}/${s}`) || null, k8s });
+  const have = new Set(derived.links.map((l) => `${l.from}>${l.to}>${l.label}`));
+  const extra = loadExtraLinks(file).filter((l) => !have.has(`${l.from}>${l.to}>${l.label}`));
+  const links = [...derived.links, ...extra].slice(0, 1000); const stats = { ...derived.stats, extra: extra.length };
   const text = `${JSON.stringify({ ...snapshot, links }, null, 2)}\n`;
   const check = parseSnapshot(text);
   if (!check.ok) { console.error(`derive-links: the result would not validate: ${check.problems.slice(0, 3).join('; ')}`); return 1; }
   fs.writeFileSync(file, text, { mode: 0o600 });
-  console.log(`derive-links: wrote ${links.length} link(s) (${stats.compose} from compose, ${stats.k8s} from Kubernetes); ${stats.unresolved} URL(s) pointed at something not in the snapshot and were left out.`);
+  console.log(`derive-links: wrote ${links.length} link(s) (${stats.compose} from compose, ${stats.k8s} from Kubernetes, ${stats.extra} from env-map.links.json); ${stats.unresolved} URL(s) pointed at something not in the snapshot and were left out.`);
   return 0;
 }
 
