@@ -1,6 +1,7 @@
-# Where Everything Runs
+# Where Everything Runs LAB
 
-**Tier: Tool**
+Tier: Tool.
+Repo: https://github.com/curtismu7/env-map-LAB
 
 A map of where a team's software runs: a local machine (Docker / OrbStack), Kubernetes namespaces and SaaS services. It draws them as a ReactFlow diagram (movable boxes, a floating side panel with the workloads behind a card) and as a table (per-environment summaries and a "what lives where" matrix). It can also show a what-if, computed from each workload's role: **After: Kubernetes for servers only, every front end in Docker on the local machine**.
 
@@ -47,6 +48,36 @@ scripts/collect.sh [--running-only] -o ~/env-map/snapshot.json my-context/my-nam
 ```
 
 It runs `docker ps -a` and `kubectl get deploy,sts` / `kubectl get ingress` (a jsonpath of names, replica counts and ingress hosts only; no env vars, images, secrets, exec, logs or writes) and refuses an output path inside this repo. `--running-only` leaves out everything stopped or scaled to 0, so the map shows the current running config. Links between things are not collected: add them to the snapshot by hand.
+
+## Run from a clone
+
+Prerequisites: Node 26 or newer. Docker (OrbStack) only if you use the Docker form. Mock needs no setup.
+
+```sh
+git clone https://github.com/curtismu7/env-map-LAB.git
+cd env-map-LAB
+npm ci
+npm run build
+npm run doctor
+npm start
+```
+
+Open http://127.0.0.1:7805/ (the server serves the built page). `GET /api/health` answers `demo-health/1`. Or with Docker: `HOST_PORT=7805 docker compose up --build -d` from the same folder (Mock only).
+
+## Ports, and what to do if the port is taken
+
+```
+Ports: env-map-LAB listens on 7805 only. Docker publishes it on 127.0.0.1:7805 only.
+
+If the port is taken:
+1. Find what is using it:
+   lsof -iTCP:7805 -sTCP:LISTEN -n -P
+2. If it is an old copy of this lab (npm start), stop that process: kill <PID>.
+   If it is this lab's container: docker compose down (from this folder).
+3. If it is something else, stop it. The lab refuses any other port on purpose
+   (one port per app; npm run doctor says so), so free 7805 rather than moving the lab.
+4. Then start again: npm start, or docker compose up -d.
+```
 
 ## Run
 
