@@ -301,3 +301,18 @@ describe("Map collapsing", () => {
     expect(screen.queryByTestId("changes")).toBeNull();
   });
 });
+
+describe("Map environment cards", () => {
+  it("names are one per line in a list with a count, roles are chips, and a count of 1 is singular", async () => {
+    lab = await startLab();
+    render(<App />);
+    await screen.findByTestId("diagram");
+    click(screen.getByTestId("tab-map"));
+    const list = await screen.findByTestId("running-laptop");
+    expect(list.tagName).toBe("UL");
+    expect(list.querySelectorAll("li").length).toBeGreaterThan(3);
+    expect(list.textContent).toMatch(/portal-ui/);
+    expect(screen.getByTestId("env-laptop").querySelectorAll(".chips .tag").length).toBeGreaterThan(0);
+    expect(screen.getByTestId("env-laptop").textContent).not.toMatch(/\b1 servers\b/);
+  });
+});
