@@ -44,3 +44,26 @@ Keys are `<env id>/<name>` or a bare `<name>` for every environment. Up to 2,000
 ## What the heuristics guess
 
 By name, split on `-`, `_` and `.`: a word `lab` means `lab`; a word such as `ui`, `web`, `frontend`, `portal`, `console`, `dashboard`, `studio`, `inspector`, `kibana` or `grafana` means `frontend`; everything else means `server`. Treat these as a first pass and correct them in the roles file.
+
+## Flows file
+
+`env-map.flows.json` next to the snapshot (Real) or `data/sample-flows.json` (Mock) holds the ordered request paths drawn on the **Agent flows**, **Standalone** and **AI-DEMO2** tabs. The snapshot says what runs where; only a person knows the order of a request, so the order lives here.
+
+```json
+{ "schema": "env-map-flows/1", "flows": [ {
+  "id": "personal-agent", "title": "Personal Agent", "summary": "optional, 400 characters",
+  "hops":  [ { "id": "gw", "label": "PingGateway", "owner": "shared", "ref": "local/ai-demo-ping-gateway", "note": "optional" } ],
+  "steps": [ { "from": "agent", "to": "gw", "label": "tools/call" } ] } ] }
+```
+
+| Field | Rules |
+| --- | --- |
+| `hops[].owner` | `standalone`, `ai-demo2`, `shared` or `external`. The Standalone tab keeps standalone, shared and external hops; the AI-DEMO2 tab keeps ai-demo2, shared and external |
+| `hops[].ref` | `<env id>/<workload name>` looked up in the snapshot (shown running, partly up, stopped or not in the snapshot), or `null` for something outside it (a browser, a SaaS) |
+| `steps` | Drawn in list order and numbered. On a stack tab, a step that passes through hops the tab hides becomes one dashed "via ..." arrow so the path stays connected |
+
+Caps: 64 KB, 8 flows, 40 hops and 80 steps per flow. A broken file is ignored with a warning in the app. Keep the real file outside this repo, like the snapshot.
+
+## Links
+
+`collect.sh` writes no links. After it, `node scripts/derive-links.mjs -i SNAPSHOT --compose FILE... --k8s CONTEXT/NAMESPACE...` adds them from compose files (`depends_on` dashed, URLs solid) and from Kubernetes env URLs. It keeps only http(s) URLs that point at something in the snapshot, drops every other value, and rewrites the snapshot (mode 600, outside this repo). Run it after each `collect.sh`, which wipes the links.

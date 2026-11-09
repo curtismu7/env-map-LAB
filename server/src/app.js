@@ -12,6 +12,7 @@ import { modeFrom, realConfig } from './config.js';
 import { LIMITS } from './snapshot.js';
 import { MOCK_FILE, loadSnapshotFile } from './source.js';
 import { buildMap } from './view.js';
+import { MOCK_FLOWS_FILE, buildFlows, flowsFileFor, loadFlows } from './flows.js';
 import { mountShelfRoute } from './shelfLink.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -72,6 +73,16 @@ export function createApp({ health = createHealth(), env = process.env, useSetti
     if (!loaded.ok) return res.status(422).json({ error: 'snapshot_invalid', source: cur.source, problems: loaded.problems });
     const warnings = loaded.overridesProblem ? [`The roles file next to the snapshot is ignored: ${loaded.overridesProblem}.`] : [];
     res.json({ source: cur.source, ...buildMap(loaded.snapshot, loaded.overrides), warnings });
+  });
+
+  // Flows: the person-written request paths, each hop looked up in the snapshot. Real reads env-map.flows.json beside the snapshot.
+  api.get('/flows', (_req, res) => {
+    const cur = current();
+    const loaded = loadSnapshotFile(cur.file);
+    if (!loaded.ok) return res.status(422).json({ error: 'snapshot_invalid', source: cur.source, problems: loaded.problems });
+    const f = loadFlows(cur.source === 'real' ? flowsFileFor(cur.file) : MOCK_FLOWS_FILE);
+    const warnings = f.problem ? [`The flows file is ignored: ${f.problem}.`] : [];
+    res.json({ source: cur.source, takenAt: loaded.snapshot.takenAt, flows: buildFlows(f.flows, loaded.snapshot), warnings });
   });
 
   api.use((_req, res) => res.status(404).json({ error: 'not_found' }));

@@ -30,6 +30,28 @@ const titles = () => [...document.querySelectorAll(".fcard .t b")].map((b) => b.
 const click = (el) => fireEvent.click(el);
 
 describe("Mock", () => {
+  it("Agent flows, Standalone and AI-DEMO2 tabs draw the two sample flows; a stack tab keeps fewer hops, and the hash follows", async () => {
+    lab = await startLab();
+    render(<App />);
+    await screen.findByTestId("diagram");
+    click(screen.getByTestId("tab-flows"));
+    await screen.findByTestId("flow-personal-agent");
+    expect(window.location.hash).toBe("#/flows");
+    expect(screen.getByTestId("flow-digital-worker")).toBeInTheDocument();
+    expect(screen.queryByTestId("view-today")).toBeNull();
+    const all = document.querySelectorAll('[data-testid^="hop-"]').length;
+    expect(all).toBeGreaterThan(0);
+    expect(screen.getByTestId("hop-ghost")).toHaveAttribute("data-status", "missing");
+    click(screen.getByTestId("tab-standalone"));
+    await waitFor(() => expect(screen.getByTestId("flows")).toHaveAttribute("data-stack", "standalone"));
+    expect(window.location.hash).toBe("#/standalone");
+    expect(document.querySelectorAll('[data-testid^="hop-"]').length).toBeLessThan(all);
+    expect(screen.queryByTestId("hop-ghost")).toBeNull();
+    click(screen.getByTestId("tab-ai-demo2"));
+    await waitFor(() => expect(screen.getByTestId("flows")).toHaveAttribute("data-stack", "ai-demo2"));
+    expect(screen.getByTestId("hop-ghost")).toBeInTheDocument();
+  });
+
   it("banner first, Real disabled with a how-to tooltip, the diagram draws regions and cards", async () => {
     lab = await startLab();
     render(<App />);
