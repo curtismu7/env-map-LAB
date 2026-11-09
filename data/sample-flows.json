@@ -1,0 +1,154 @@
+{
+  "schema": "env-map-flows/1",
+  "flows": [
+    {
+      "id": "personal-agent",
+      "title": "Sample personal agent",
+      "summary": "A made-up personal agent asks a service for a balance: it signs in, calls the gateway, which asks the policy service and then the API.",
+      "hops": [
+        {
+          "id": "user",
+          "label": "Person in a browser",
+          "owner": "external",
+          "ref": null
+        },
+        {
+          "id": "agent",
+          "label": "Agent app",
+          "owner": "standalone",
+          "ref": "laptop/portal-ui",
+          "note": "Front end the person talks to."
+        },
+        {
+          "id": "idp",
+          "label": "Sign-in service",
+          "owner": "external",
+          "ref": "idp/sign-in"
+        },
+        {
+          "id": "gw",
+          "label": "Gateway",
+          "owner": "shared",
+          "ref": "team-a/edge-gateway",
+          "note": "Checks the token and asks the policy service."
+        },
+        {
+          "id": "policy",
+          "label": "Policy service",
+          "owner": "ai-demo2",
+          "ref": "team-a/auth-proxy"
+        },
+        {
+          "id": "api",
+          "label": "Orders API",
+          "owner": "ai-demo2",
+          "ref": "team-a/orders-api"
+        },
+        {
+          "id": "ghost",
+          "label": "Audit sink",
+          "owner": "ai-demo2",
+          "ref": "team-a/audit-sink",
+          "note": "Not in the snapshot: shown as missing."
+        }
+      ],
+      "steps": [
+        {
+          "from": "user",
+          "to": "agent",
+          "label": "asks"
+        },
+        {
+          "from": "agent",
+          "to": "idp",
+          "label": "signs in"
+        },
+        {
+          "from": "agent",
+          "to": "gw",
+          "label": "calls with token"
+        },
+        {
+          "from": "gw",
+          "to": "policy",
+          "label": "is this allowed?"
+        },
+        {
+          "from": "gw",
+          "to": "api",
+          "label": "forwards"
+        },
+        {
+          "from": "api",
+          "to": "ghost",
+          "label": "writes audit"
+        }
+      ]
+    },
+    {
+      "id": "digital-worker",
+      "title": "Sample digital worker",
+      "summary": "A made-up background worker runs a job with no person present: it asks for a token, calls the gateway and the API, and a person approves one step.",
+      "hops": [
+        {
+          "id": "job",
+          "label": "Batch runner",
+          "owner": "ai-demo2",
+          "ref": "laptop/batch-runner"
+        },
+        {
+          "id": "idp",
+          "label": "Sign-in service",
+          "owner": "external",
+          "ref": "idp/sign-in"
+        },
+        {
+          "id": "gw",
+          "label": "Gateway",
+          "owner": "shared",
+          "ref": "team-a/edge-gateway"
+        },
+        {
+          "id": "api",
+          "label": "Orders API",
+          "owner": "ai-demo2",
+          "ref": "team-a/orders-api"
+        },
+        {
+          "id": "approve",
+          "label": "Approval page",
+          "owner": "standalone",
+          "ref": "laptop/portal-ui",
+          "note": "A person approves the risky step."
+        }
+      ],
+      "steps": [
+        {
+          "from": "job",
+          "to": "idp",
+          "label": "gets a token"
+        },
+        {
+          "from": "job",
+          "to": "gw",
+          "label": "calls"
+        },
+        {
+          "from": "gw",
+          "to": "api",
+          "label": "forwards"
+        },
+        {
+          "from": "api",
+          "to": "approve",
+          "label": "asks for approval"
+        },
+        {
+          "from": "approve",
+          "to": "job",
+          "label": "approved"
+        }
+      ]
+    }
+  ]
+}

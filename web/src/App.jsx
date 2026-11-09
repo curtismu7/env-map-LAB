@@ -1,10 +1,11 @@
 import React from "react";
-import { getMap, getJson, setMode } from "./api";
+import { getMap, getFlows, getJson, setMode } from "./api";
 import { THEMES, applyTheme, savedTheme } from "./theme";
-import { parseRoute, routeHash } from "./lib/route.js";
+import { parseRoute, routeHash, isFlowTab, stackOf } from "./lib/route.js";
 import ShelfLink from "./components/ShelfLink.jsx";
 import DiagramView from "./components/DiagramView.jsx";
 import MapView from "./components/MapView.jsx";
+import FlowsView from "./components/FlowsView.jsx";
 
 export { parseRoute };
 
@@ -20,6 +21,7 @@ export default function App() {
   const [info, setInfo] = React.useState(undefined); // undefined = loading, null = failed
   const [map, setMap] = React.useState(undefined);   // undefined = loading, null = failed
   const [mapError, setMapError] = React.useState(null);
+  const [flows, setFlows] = React.useState(undefined); // undefined = loading, null = failed
   const [epoch, setEpoch] = React.useState(0);       // bumped on every mode switch: the data reloads
   const [resetNonce, setResetNonce] = React.useState(0);
   const [switchError, setSwitchError] = React.useState("");
@@ -33,8 +35,9 @@ export default function App() {
   }, []);
   React.useEffect(() => {
     let alive = true;
-    setMap(undefined); setMapError(null);
+    setMap(undefined); setMapError(null); setFlows(undefined);
     getJson("/api/info").then((i) => { if (alive) setInfo(i); }, () => { if (alive) setInfo(null); });
+    getFlows().then((f) => { if (alive) setFlows(f); }, () => { if (alive) setFlows(null); });
     getMap().then((m) => { if (alive) setMap(m); }, (e) => { if (alive) { setMap(null); setMapError(e); } });
     return () => { alive = false; };
   }, [epoch]);
@@ -82,22 +85,24 @@ export default function App() {
         {switchError && <p className="field-error" role="alert" data-testid="switch-error">{switchError}</p>}
         <div className="toolbar">
           <div className="tabs" role="tablist" aria-label="View">
-            {[["diagram", "Diagram"], ["map", "Map"]].map(([id, label]) => (
+            {[["diagram", "Diagram"], ["map", "Map"], ["flows", "Agent flows"], ["standalone", "Standalone"], ["ai-demo2", "AI-DEMO2"]].map(([id, label]) => (
               <button key={id} type="button" role="tab" id={`tab-${id}`} aria-selected={route.tab === id} data-testid={`tab-${id}`} onClick={() => go({ tab: id })}>{label}</button>
             ))}
           </div>
           <span className="spacer" />
-          <span className="seg" role="group" aria-label="Which arrangement">
+          {!isFlowTab(route.tab) && <span className="seg" role="group" aria-label="Which arrangement">
             <button type="button" aria-pressed={route.view === "today"} data-testid="view-today" onClick={() => go({ view: "today" })}>Today</button>
             <button type="button" aria-pressed={route.view === "after"} data-testid="view-after" onClick={() => go({ view: "after" })} title="After: Kubernetes for servers only, every front end in Docker on the local machine">After: Kubernetes for servers only</button>
-          </span>
+          </span>}
           {route.tab === "diagram" && <button type="button" data-testid="reset" onClick={() => setResetNonce((n) => n + 1)}>Reset layout</button>}
         </div>
-        {map && <p className="meta" data-testid="stamp">Snapshot taken {takenAt}. {map.counts.workloads} workloads in {map.counts.environments} environments; {map.counts.byName} roles guessed from names (unverified).</p>}
-        {route.view === "after" && <p className="notice" data-testid="after-note">{AFTER_NOTE}</p>}
+        {map && !isFlowTab(route.tab) && <p className="meta" data-testid="stamp">Snapshot taken {takenAt}. {map.counts.workloads} workloads in {map.counts.environments} environments; {map.counts.byName} roles guessed from names (unverified).</p>}
+        {route.view === "after" && !isFlowTab(route.tab) && <p className="notice" data-testid="after-note">{AFTER_NOTE}</p>}
         {map?.warnings?.map((w) => <p key={w} className="notice" data-testid="warning">{w}</p>)}
         {view?.notes?.map((n) => <p key={n} className="notice">{n}</p>)}
-        {map === null ? (
+        {isFlowTab(route.tab) && flows?.warnings?.map((w) => <p key={w} className="notice" data-testid="warning">{w}</p>)}
+        {isFlowTab(route.tab) ? (flows === null ? <p className="field-error" role="alert" data-testid="flows-error">The flows could not be loaded.</p> : flows === undefined ? <p className="muted" data-testid="loading">Loading...</p> : <FlowsView data={flows} stack={stackOf(route.tab)} />)
+        : map === null ? (
           <div className="field-error" role="alert" data-testid="map-error">
             {mapError?.status === 422 ? "The snapshot does not validate, so nothing is drawn." : "The map could not be loaded."}
             {mapError?.problems?.length > 0 && <ul>{mapError.problems.map((p) => <li key={p}>{p}</li>)}</ul>}

@@ -16,3 +16,4 @@ export async function setMode(source) {
 }
 
 export const getMap = () => getJson("/api/map");
+export const getFlows = () => getJson("/api/flows");
