@@ -1,6 +1,6 @@
 #!/bin/bash
 # Owner-run, READ-ONLY collector: writes an env-map/1 snapshot of where things run, outside this repo.
-#   scripts/collect.sh [-o /abs/path/snapshot.json] [--no-docker] [--local-label TEXT] [CONTEXT/NAMESPACE ...]
+#   scripts/collect.sh [-o /abs/path/snapshot.json] [--no-docker] [--running-only] [--local-label TEXT] [CONTEXT/NAMESPACE ...]
 # It runs only these read commands: `docker ps -a --format ...` and `kubectl get deploy,sts` / `kubectl get ingress` with a jsonpath that
 # prints names, replica counts and ingress hosts (never env vars, images, annotations or secrets). No exec, no logs, no apply, no scale,
 # no delete, no port-forward. The only write is the snapshot file (mode 600). Links between things are not collected: add them by hand.
@@ -8,11 +8,12 @@
 set -euo pipefail
 umask 077
 here="$(cd "$(dirname "$0")" && pwd)"
-out="${ENV_MAP_SNAPSHOT:-}"; docker_on=1; label=""; specs=()
+out="${ENV_MAP_SNAPSHOT:-}"; docker_on=1; label=""; running=0; specs=()
 while [ $# -gt 0 ]; do
   case "$1" in
     -o) out="${2:?-o needs a path}"; shift 2 ;;
     --no-docker) docker_on=0; shift ;;
+    --running-only) running=1; shift ;;
     --local-label) label="${2:?--local-label needs text}"; shift 2 ;;
     -h|--help) sed -n '2,8p' "$0"; exit 0 ;;
     -*) echo "collect: unknown option $1" >&2; exit 2 ;;
@@ -29,7 +30,7 @@ case "$out" in /*) ;; *) echo "collect: the output path must be absolute" >&2; e
 [ -d "$(dirname "$out")" ] || { echo "collect: the folder for the output does not exist" >&2; exit 2; }
 
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
-args=(--out "$out")
+args=(--out "$out"); [ "$running" = 1 ] && args+=(--running-only)
 if [ "$docker_on" = 1 ]; then
   if command -v docker >/dev/null 2>&1 && docker ps -a --format '{{.Names}}|{{.State}}|{{.Ports}}|{{.Label "com.docker.compose.project"}}' > "$tmp/docker.txt" 2>/dev/null; then
     args+=(--local "$tmp/docker.txt"); [ -n "$label" ] && args+=(--local-label "$label")
