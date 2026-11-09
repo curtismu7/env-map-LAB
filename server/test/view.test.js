@@ -183,3 +183,21 @@ test('Servers view: one box per running workload, stopped ones left out, links r
   const many = buildMap(base([env('big', 'local', Array.from({ length: 30 }, (_, i) => w(`s${i}`, 1, 1)))]));
   assert.equal(many.views.servers.regions[0].columns, 3);
 });
+
+test('Landscape: one region per owner across environments, AI-DEMO2 by tier, running only, one counted arrow per card pair; without owners it is Today', () => {
+  const m = buildMap(base([
+    env('box--ai-demo2', 'local', [w('ai-demo-ui', 1, 1), w('ai-demo-api-server', 1, 1), w('ai-demo-loki', 1, 1), w('ai-demo-old', 0, 0)], { label: 'Mac · AI-DEMO2' }),
+    env('ns--ai-demo2', 'k8s', [w('mcp-server', 1, 1)], { label: 'NS · AI-DEMO2' }),
+    env('box--labs', 'local', [w('muse-local', 1, 1, { group: 'muse' })], { label: 'Mac · LAB apps' }),
+  ], [{ from: 'box--ai-demo2/ai-demo-ui', to: 'box--ai-demo2/ai-demo-api-server', label: 'a', source: 'seen' }, { from: 'box--ai-demo2/ai-demo-api-server', to: 'ns--ai-demo2/mcp-server', label: 'b', source: 'configured' }, { from: 'box--ai-demo2/ai-demo-api-server', to: 'ns--ai-demo2/mcp-server', label: 'c', source: 'seen' }, { from: 'box--labs/muse-local', to: 'box--ai-demo2/ai-demo-api-server', label: 'd', source: 'seen' }]));
+  const v = m.views.landscape;
+  assert.deepEqual(v.regions.map((r) => r.label), ['AI-DEMO2', 'LAB apps']);
+  assert.deepEqual(v.regions[0].cards.map((c) => c.title), ['Front ends', 'API and BFF', 'MCP servers and tools', 'Observability']);
+  assert.match(v.regions[0].cards[2].subtitle, /NS 1/);
+  assert.deepEqual(v.regions[1].cards.map((c) => c.title), ['muse']);
+  assert.deepEqual(v.links.map((l) => [l.label, l.source]), [['1 link', 'seen'], ['2 links', 'seen'], ['1 link', 'seen']]);
+  assert.equal(JSON.stringify(v).includes('ai-demo-old'), false); // stopped: not drawn
+  const plain = buildMap(base([env('box', 'local', [w('a', 1, 1)])]));
+  assert.equal(plain.views.landscape.name, 'landscape');
+  assert.deepEqual(plain.views.landscape.regions.map((r) => r.envId), ['box']);
+});

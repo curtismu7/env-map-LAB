@@ -329,3 +329,18 @@ describe("Observed traffic", () => {
     expect(t.textContent).toMatch(/GET \/orders\/:id 404/);
   });
 });
+
+describe("Landscape", () => {
+  it("the Detail toggle offers Landscape, follows the hash, and Grouped brings the groups back", async () => {
+    lab = await startLab();
+    render(<App />);
+    await waitFor(() => expect(titles()).toContain("Web front ends"));
+    click(screen.getByTestId("detail-landscape"));
+    await waitFor(() => expect(window.location.hash).toBe("#/diagram/landscape"));
+    expect(screen.getByTestId("detail-landscape")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("detail-grouped")).toHaveAttribute("aria-pressed", "false");
+    click(screen.getByTestId("detail-grouped"));
+    await waitFor(() => expect(window.location.hash).toBe("#/diagram"));
+    expect(titles()).toContain("Web front ends");
+  });
+});

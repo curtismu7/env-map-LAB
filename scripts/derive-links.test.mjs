@@ -1,7 +1,10 @@
 // The link deriver: compose + Kubernetes env URLs become links; only resolvable http(s) URLs are kept; nothing else survives.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { composeServices, deriveLinks, k8sEnvUrls } from './derive-links.mjs';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { composeServices, deriveLinks, k8sEnvUrls, loadExtraLinks } from './derive-links.mjs';
 
 const COMPOSE = `name: shop
 services:
@@ -45,4 +48,16 @@ test('k8s: only http(s) URLs survive; service names and unique hosts resolve; sh
   const { links, stats } = deriveLinks({ snapshot: snap, k8s: [{ env: 'ns1', workloads: urls }] });
   assert.deepEqual(links.map((l) => `${l.from}>${l.to}`).sort(), ['ns1/orders>ns1/web', 'ns1/web>ns1/orders']);
   assert.equal(stats.unresolved, 2);
+});
+
+test('loadExtraLinks reads the hand-written links file and drops bad entries; a missing or broken file is empty', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'env-map-links-'));
+  try {
+    const f = path.join(dir, 'snapshot.json');
+    assert.deepEqual(loadExtraLinks(f), []);
+    fs.writeFileSync(path.join(dir, 'env-map.links.json'), JSON.stringify({ schema: 'env-map-links/1', links: [{ from: 'local/a', to: 'local/b', label: 'calls :1', source: 'seen' }, { from: 'x', to: 'y', source: 'nope' }, { to: 'y', source: 'seen' }] }));
+    assert.deepEqual(loadExtraLinks(f), [{ from: 'local/a', to: 'local/b', label: 'calls :1', source: 'seen' }]);
+    fs.writeFileSync(path.join(dir, 'env-map.links.json'), '{broken');
+    assert.deepEqual(loadExtraLinks(f), []);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
