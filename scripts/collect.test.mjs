@@ -85,7 +85,7 @@ test('collect.sh is read-only: only docker ps and kubectl get, no exec, logs, ap
   const sh = fs.readFileSync(path.join(root, 'scripts/collect.sh'), 'utf8').split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
   const kube = [...sh.matchAll(/kubectl\b[^\n|]*/g)].map((m) => m[0]);
   assert.ok(kube.length >= 2);
-  for (const k of kube) if (/--context/.test(k)) assert.match(k, /\bget (deploy,sts|ingress)\b/, k);
+  for (const k of kube) if (/--context/.test(k)) assert.match(k, /\bget (deploy,sts|ds|ingress)\b/, k);
   assert.doesNotMatch(sh, /kubectl[^\n]*\s(exec|logs|apply|create|delete|patch|edit|scale|rollout|cp|port-forward|attach|run|replace|annotate|label|drain|cordon|taint|set)\s/);
   assert.doesNotMatch(sh, /docker\s+(exec|run|rm|rmi|stop|kill|start|restart|cp|commit|build|pull|push|login|inspect|logs|compose|volume|network)\b/);
   assert.match(sh, /docker ps -a --format/);
@@ -109,4 +109,9 @@ test('buildSnapshot runningOnly keeps only workloads with a ready replica and co
   assert.deepEqual(names, ['local/orders-api', 'local/portal-ui', 'team-a/orders-api', 'team-a/orders-api-statefulset', 'team-a/orders-ui']);
   assert.equal(notRunning, 3);
   assert.equal(buildSnapshot({ local: DOCKER }).snapshot.environments[0].workloads.length > 2, true);
+});
+
+test('k8sWorkloads reads a DaemonSet as ready/desired pods', () => {
+  const { workloads } = k8sWorkloads('DaemonSet|node-sensor|27|27\nDaemonSet|idle-sensor||0', '');
+  assert.deepEqual(workloads.map((w) => [w.name, w.kind, w.ready, w.want]), [['node-sensor', 'daemonset', 27, 27], ['idle-sensor', 'daemonset', 0, 0]]);
 });

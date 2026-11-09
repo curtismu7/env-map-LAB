@@ -1,7 +1,7 @@
 #!/bin/bash
 # Owner-run, READ-ONLY collector: writes an env-map/1 snapshot of where things run, outside this repo.
 #   scripts/collect.sh [-o /abs/path/snapshot.json] [--no-docker] [--running-only] [--local-label TEXT] [CONTEXT/NAMESPACE ...]
-# It runs only these read commands: `docker ps -a --format ...` and `kubectl get deploy,sts` / `kubectl get ingress` with a jsonpath that
+# It runs only these read commands: `docker ps -a --format ...` and `kubectl get deploy,sts,ds` / `kubectl get ingress` with a jsonpath that
 # prints names, replica counts and ingress hosts (never env vars, images, annotations or secrets). No exec, no logs, no apply, no scale,
 # no delete, no port-forward. The only write is the snapshot file (mode 600). Links between things are not collected: add them by hand.
 # -o defaults to ENV_MAP_SNAPSHOT (environment, or ~/Development/.env / STANDALONE_ENV). Optional roles file: env-map.roles.json beside it.
@@ -41,6 +41,7 @@ for spec in "${specs[@]+"${specs[@]}"}"; do
   ctx="${spec%%/*}"; ns="${spec#*/}"; i=$((i+1))
   if command -v kubectl >/dev/null 2>&1 \
     && kubectl --context "$ctx" -n "$ns" --request-timeout=20s get deploy,sts -o jsonpath='{range .items[*]}{.kind}{"|"}{.metadata.name}{"|"}{.status.readyReplicas}{"|"}{.spec.replicas}{"\n"}{end}' > "$tmp/k$i.txt" 2>/dev/null; then
+    kubectl --context "$ctx" -n "$ns" --request-timeout=20s get ds -o jsonpath='{range .items[*]}{.kind}{"|"}{.metadata.name}{"|"}{.status.numberReady}{"|"}{.status.desiredNumberScheduled}{"\n"}{end}' >> "$tmp/k$i.txt" 2>/dev/null || :
     kubectl --context "$ctx" -n "$ns" --request-timeout=20s get ingress -o jsonpath='{range .items[*]}{.metadata.name}{"|"}{range .spec.rules[*]}{.host}{","}{end}{"|"}{range .spec.rules[*].http.paths[*]}{.backend.service.name}{","}{end}{"\n"}{end}' > "$tmp/i$i.txt" 2>/dev/null || : > "$tmp/i$i.txt"
     args+=(--ns "$spec" "$tmp/k$i.txt" "$tmp/i$i.txt")
   else echo "collect: kubectl could not read $spec; it is left out" >&2; fi

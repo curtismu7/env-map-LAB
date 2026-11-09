@@ -33,13 +33,13 @@ export function dockerWorkloads(text) {
   return { workloads: out, skipped };
 }
 
-// "Kind|name|ready|want" per Deployment or StatefulSet; "ingress|host1,host2|svc1,svc2" per Ingress.
+// "Kind|name|ready|want" per Deployment, StatefulSet or DaemonSet (a DaemonSet's ready and want are its ready and desired pods); "ingress|host1,host2|svc1,svc2" per Ingress.
 export function k8sWorkloads(workloadsText, ingressText) {
   const out = []; let skipped = 0;
   for (const l of lines(workloadsText)) {
     const [kind, name, ready, want] = l.split('|');
     if (!NAME.test(name || '')) { skipped++; continue; }
-    out.push({ name, kind: /^stateful/i.test(kind) ? 'statefulset' : 'deployment', ready: num(ready), want: num(want), ports: [], hosts: [] });
+    out.push({ name, kind: /^stateful/i.test(kind) ? 'statefulset' : /^daemon/i.test(kind) ? 'daemonset' : 'deployment', ready: num(ready), want: num(want), ports: [], hosts: [] });
   }
   const byName = new Map(out.map((w) => [w.name, w]));
   for (const l of lines(ingressText)) {
