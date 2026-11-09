@@ -1,6 +1,7 @@
 // Owners: AI-DEMO2 and the -LAB apps are two separate systems, so a Real snapshot can be split into one environment per owner.
 // The split is ON only when env-map.owners.json sits next to the snapshot (Mock never splits). Owner comes from, in order of trust:
-//   the owners file  { "schema": "env-map-owners/1", "guess": true, "owners": { "<env id>/<name>" | "<name>": "ai-demo2" | "labs" } }
+//   the owners file  { "schema": "env-map-owners/1", "guess": true, "owners": { "<env id>/<name>" | "<name>": "ai-demo2" | "labs" | "both" } }
+//   ("both" lists the workload on each side; links to it land on the AI-DEMO2 copy)
 //   a guess from names, only when "guess": true: Docker group "ai-demo" or a name starting "ai-demo-" is AI-DEMO2, the rest are LAB apps;
 //   Kubernetes: a name with the word lab or mock is a LAB app, the rest AI-DEMO2. Shown to the person as a guess.
 import fs from 'node:fs';
@@ -9,6 +10,7 @@ import path from 'node:path';
 export const OWNERS_FILE = 'env-map.owners.json';
 export const OWNERS_SCHEMA = 'env-map-owners/1';
 export const OWNER_VALUES = ['ai-demo2', 'labs'];
+const VALID = [...OWNER_VALUES, 'both']; // "both": the workload belongs to both systems (shared), so it is listed on each side
 const OWNER_LABEL = { 'ai-demo2': 'AI-DEMO2', labs: 'LAB apps' };
 const MAX_BYTES = 65_536;
 
@@ -19,7 +21,7 @@ export function parseOwners(text) {
   const owners = j.owners ?? {};
   if (!owners || typeof owners !== 'object' || Array.isArray(owners) || Object.keys(owners).length > 2000) return { ok: false, problem: 'owners file: "owners" must be an object of at most 2000 entries' };
   const map = new Map();
-  for (const [k, v] of Object.entries(owners)) { if (k.length > 250 || !OWNER_VALUES.includes(v)) return { ok: false, problem: 'owners file: every value must be ai-demo2 or labs' }; map.set(k, v); }
+  for (const [k, v] of Object.entries(owners)) { if (k.length > 250 || !VALID.includes(v)) return { ok: false, problem: 'owners file: every value must be ai-demo2, labs or both' }; map.set(k, v); }
   return { ok: true, map, guess: j.guess === true };
 }
 
@@ -48,9 +50,9 @@ export function splitByOwner(snapshot, { map = new Map(), guess = false } = {}) 
       let o = map.get(`${e.id}/${w.name}`) ?? map.get(w.name);
       if (!o && guess) { o = guessOwner(e.kind, w); guessed++; }
       o ||= 'ai-demo2';
-      if (!by.has(o)) by.set(o, []);
-      by.get(o).push(w);
-      const eid = `${e.id}--${o}`;
+      const sides = o === 'both' ? OWNER_VALUES : [o];
+      for (const side of sides) { if (!by.has(side)) by.set(side, []); by.get(side).push(w); }
+      const eid = `${e.id}--${sides[0]}`; // links to a shared workload land on its AI-DEMO2 copy
       newRef.set(`${e.id}/${w.name}`, `${eid}/${w.name}`);
       if (w.group && !groupOwner.has(`${e.id}/${w.group}`)) groupOwner.set(`${e.id}/${w.group}`, `${eid}/${w.group}`);
     }
