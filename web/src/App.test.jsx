@@ -254,3 +254,50 @@ describe("Each running server", () => {
     expect(screen.getByTestId("detail-grouped")).toHaveAttribute("aria-pressed", "true");
   });
 });
+
+describe("Map collapsing", () => {
+  it("environment cards, sections, change lists and table rows collapse and expand; Collapse all / Expand all work", async () => {
+    lab = await startLab();
+    render(<App />);
+    await screen.findByTestId("diagram");
+    click(screen.getByTestId("tab-map"));
+    await screen.findByTestId("mapview");
+    // An environment card
+    const env = screen.getByTestId("env-laptop");
+    expect(within(env).getByText("Workloads")).toBeInTheDocument();
+    click(screen.getByTestId("tw-env-laptop"));
+    expect(within(env).queryByText("Workloads")).toBeNull();
+    expect(screen.getByTestId("env-laptop-brief").textContent).toMatch(/running of \d+ workloads/);
+    expect(screen.getByTestId("tw-env-laptop")).toHaveAttribute("aria-expanded", "false");
+    click(screen.getByTestId("tw-env-laptop"));
+    expect(within(env).getByText("Workloads")).toBeInTheDocument();
+    // A table row shows a count when collapsed
+    const row = screen.getByTestId("matrix").querySelector("tbody tr");
+    const btn = row.querySelector("button.tw");
+    const names = within(row).queryAllByText(/./, { selector: ".cellitem" }).length;
+    expect(names).toBeGreaterThan(0);
+    click(btn);
+    expect(row.querySelectorAll(".cellitem").length).toBe(0);
+    expect(within(row).getAllByTestId("cell-count").length).toBeGreaterThan(0);
+    click(btn);
+    expect(row.querySelectorAll(".cellitem").length).toBe(names);
+    // The whole matrix section, then All
+    click(screen.getByTestId("tw-matrix"));
+    expect(screen.queryByTestId("matrix")).toBeNull();
+    click(screen.getByTestId("expand-all"));
+    expect(screen.getByTestId("matrix")).toBeInTheDocument();
+    click(screen.getByTestId("collapse-all"));
+    expect(screen.queryByTestId("matrix")).toBeNull();
+    expect(within(env).queryByText("Workloads")).toBeNull();
+    click(screen.getByTestId("expand-all"));
+    expect(within(env).getByText("Workloads")).toBeInTheDocument();
+    // After: the change lists collapse one by one
+    click(screen.getByTestId("view-after"));
+    await screen.findByTestId("changes");
+    expect(screen.getByTestId("change-toDeploy").querySelector("ul")).not.toBeNull();
+    click(screen.getByTestId("tw-change-toDeploy"));
+    expect(screen.getByTestId("change-toDeploy").querySelector("ul")).toBeNull();
+    click(screen.getByTestId("tw-changes"));
+    expect(screen.queryByTestId("changes")).toBeNull();
+  });
+});
