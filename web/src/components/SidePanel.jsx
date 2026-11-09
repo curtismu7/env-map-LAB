@@ -29,6 +29,12 @@ export default function SidePanel({ info, view }) {
               {w.plan === "scaleup" && <span className="tag tag--info">to scale up</span>}
               {w.plan === "moved" && <span className="tag tag--info">moved from {w.movedFrom}</span>}
             </span>
+            {w.traffic && (
+              <span className="traffic" data-testid="traffic">
+                <span className="muted">{w.traffic.total} requests seen ({w.traffic.source})</span>
+                <ul className="routes">{w.traffic.routes.map((r) => <li key={r.label} className="mono"><span>{r.label}</span><b>{r.count}</b></li>)}</ul>
+              </span>
+            )}
             {(w.ports.length > 0 || w.hosts.length > 0) && <span className="muted mono">{[...w.ports.map((p) => `:${p}`), ...w.hosts].join("  ")}</span>}
           </li>
         ))}

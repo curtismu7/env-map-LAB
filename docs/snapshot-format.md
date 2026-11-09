@@ -67,3 +67,19 @@ Caps: 64 KB, 8 flows, 40 hops and 80 steps per flow. A broken file is ignored wi
 ## Links
 
 `collect.sh` writes no links. After it, `node scripts/derive-links.mjs -i SNAPSHOT --compose FILE... --k8s CONTEXT/NAMESPACE...` adds them from compose files (`depends_on` dashed, URLs solid) and from Kubernetes env URLs. It keeps only http(s) URLs that point at something in the snapshot, drops every other value, and rewrites the snapshot (mode 600, outside this repo). Run it after each `collect.sh`, which wipes the links.
+
+## Owners file (AI-DEMO2 and the LAB apps are two systems)
+
+`env-map.owners.json` next to a Real snapshot splits every Docker and Kubernetes environment into "<name> · AI-DEMO2" and "<name> · LAB apps" (SaaS stays whole). Without the file nothing is split (Mock never splits).
+
+```json
+{ "schema": "env-map-owners/1", "guess": true, "owners": { "muse-local": "labs", "local/ai-demo-api-server": "ai-demo2" } }
+```
+
+Keys are `<env id>/<name>` or a bare `<name>`; values are `ai-demo2` or `labs`. With `"guess": true`, anything not listed is assigned by name and the app says so: Docker group `ai-demo` or a name starting `ai-demo-` is AI-DEMO2, the rest are LAB apps; on Kubernetes a name with the word `lab` or `mock` is a LAB app, the rest AI-DEMO2. Flows are not split (their hops carry their own owner).
+
+## Observed traffic
+
+A workload may carry `traffic`: `{ "source": "prometheus", "total": 12358, "routes": [ { "label": "GET /orders 404", "count": 22 } ] }` (at most 12 routes, labels up to 100 characters). The details panel lists it, and the each-server view shows the request total.
+
+`node scripts/derive-traces.mjs -i SNAPSHOT` fills it from the local Prometheus (request counters of the API resource server, PingGateway routes, MCP gateway methods, LLM proxy) and Jaeger (span names such as `GET /api/admin/config`, health and metrics routes left out), GET requests to loopback only. It also adds `N traced calls` links when a Jaeger span's parent is in another service. Run it after `collect.sh` and `derive-links.mjs`; a rerun replaces its own traffic and links. Counts are what the stack has seen so far, not a rate, and tracing today crosses almost no service boundaries, so expect few traced links.
