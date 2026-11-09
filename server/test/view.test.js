@@ -166,3 +166,20 @@ test('A full-size snapshot (2500 workloads, 1000 links) builds quickly', () => {
   assert.ok(Date.now() - t0 < 3000);
   assert.equal(m.counts.workloads, 2500);
 });
+
+test('Servers view: one box per running workload, stopped ones left out, links run between the individual servers, big regions get columns', () => {
+  const m = buildMap(base([
+    env('box', 'local', [w('ui', 1, 1, { ports: [4000] }), w('api', 1, 1, { ports: [3001] }), w('old', 0, 0), w('half', 0, 2)]),
+    env('ns', 'k8s', [w('gw', 2, 2, { hosts: ['gw.example'] })]),
+  ], [{ from: 'box/ui', to: 'box/api', label: 'calls :3001', source: 'seen' }, { from: 'box/api', to: 'ns/gw', label: 'calls', source: 'seen' }, { from: 'box/old', to: 'box/api', label: 'calls', source: 'seen' }]));
+  const v = m.views.servers;
+  assert.deepEqual(v.regions[0].cards.map((c) => c.title), ['ui', 'api']);
+  assert.deepEqual(v.regions[0].cards.map((c) => c.subtitle), [':4000', ':3001']);
+  assert.deepEqual(v.regions[1].cards.map((c) => c.subtitle), ['gw.example']);
+  assert.ok(v.regions.every((r) => r.columns === 1));
+  const ids = Object.fromEntries(v.regions.flatMap((r) => r.cards.map((c) => [c.title, c.id])));
+  assert.deepEqual(v.links.map((l) => [l.from, l.to, l.label]), [[ids.ui, ids.api, 'calls :3001'], [ids.api, ids.gw, 'calls']]); // the link from the stopped one is dropped
+  assert.equal(v.links.length, 2);
+  const many = buildMap(base([env('big', 'local', Array.from({ length: 30 }, (_, i) => w(`s${i}`, 1, 1)))]));
+  assert.equal(many.views.servers.regions[0].columns, 3);
+});

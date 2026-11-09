@@ -3,6 +3,7 @@ import ReactFlow, { Controls, Handle, Position, useEdgesState, useNodesState } f
 import "reactflow/dist/style.css";
 import { buildFlow, chooseViewport } from "../lib/layout.js";
 import SidePanel from "./SidePanel.jsx";
+import FloatingPanel from "./FloatingPanel.jsx";
 
 function Region({ data }) {
   const r = data.region;
@@ -83,7 +84,11 @@ export default function DiagramView({ view, viewName, resetNonce }) {
             <Controls showInteractive={false} />
           </ReactFlow>
         </div>
-        <SidePanel info={info} view={view} />
+        {info ? (
+          <FloatingPanel key={sel} title="Workloads" onClose={() => setSel(null)} testId="side">
+            <div aria-live="polite"><SidePanel info={info} view={view} /></div>
+          </FloatingPanel>
+        ) : <SidePanel info={info} view={view} />}
       </div>
     </div>
   );

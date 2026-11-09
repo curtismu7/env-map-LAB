@@ -49,7 +49,7 @@ test('GET /api/map in Mock returns both views of the sample and never a Real nam
     assert.equal(m.source, 'mock');
     assert.equal(m.schema, 'env-map/1');
     assert.equal(m.counts.environments, 5);
-    assert.deepEqual(Object.keys(m.views), ['today', 'after']);
+    assert.deepEqual(Object.keys(m.views), ['today', 'after', 'servers']);
     assert.equal(m.views.today.regions.length, 5);
     assert.ok(m.views.after.changes.toDeploy.length > 0);
     assert.equal(JSON.stringify(m).includes('real-ui'), false);

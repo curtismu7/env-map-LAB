@@ -5,6 +5,7 @@ export const TOP = 74;        // room for the region heading
 export const REGION_W = 440;
 export const CARD_W = 400;
 export const SAAS_CARD_W = 300;
+export const GRID_CARD_W = 290; // boxes in a many-box region (the per-server view)
 export const GAP = 60;
 export const MIN_ZOOM = 0.9;  // the default view is never smaller than this; pan for the rest
 
@@ -26,19 +27,24 @@ export function buildFlow(view) {
   const nodes = []; const cardInfo = new Map(); const geometry = new Map();
   let k8s = 0;
   let rowBottom = 0;
-  top.forEach((r, i) => {
+  let nextX = 0;
+  top.forEach((r) => {
     const tone = toneOf(r, r.kind === "k8s" ? k8s++ : 0);
-    const h = TOP + Math.max(1, r.cards.length) * STEP + 14;
-    const g = { id: r.id, x: i * (REGION_W + GAP), y: 0, w: REGION_W, h, cw: CARD_W, tone };
+    const cols = r.columns || 1;
+    const cw = cols > 1 ? GRID_CARD_W : CARD_W;
+    const w = cols > 1 ? cols * (cw + 14) + 14 : REGION_W;
+    const h = TOP + Math.max(1, Math.ceil(r.cards.length / cols)) * STEP + 14;
+    const g = { id: r.id, x: nextX, y: 0, w, h, cw, tone, cols };
+    nextX += w + GAP;
     geometry.set(r.envId, g); rowBottom = Math.max(rowBottom, h);
     nodes.push({ id: r.id, type: "region", position: { x: g.x, y: g.y }, data: { region: r, tone }, style: { width: g.w, height: g.h }, draggable: true, selectable: false, zIndex: 0 });
     r.cards.forEach((c, ci) => {
-      const pos = { x: (g.w - g.cw) / 2, y: TOP + ci * STEP };
-      cardInfo.set(c.id, { card: c, region: r, geometry: g });
+      const pos = cols > 1 ? { x: 14 + (ci % cols) * (cw + 14), y: TOP + Math.floor(ci / cols) * STEP } : { x: (g.w - g.cw) / 2, y: TOP + ci * STEP };
+      cardInfo.set(c.id, { card: c, region: r, geometry: g, pos });
       nodes.push({ id: c.id, type: "card", parentNode: r.id, extent: "parent", position: pos, data: { card: c, tone, cw: g.cw }, zIndex: 1 });
     });
   });
-  const stripW = Math.max(REGION_W, top.length * (REGION_W + GAP) - GAP);
+  const stripW = Math.max(REGION_W, nextX - GAP);
   let x = 0; let y = rowBottom + 70; let rowH = 0;
   saas.forEach((r) => {
     const n = Math.max(1, r.cards.length);
@@ -61,7 +67,10 @@ export function buildFlow(view) {
   const edges = view.links.map((l) => {
     const a = cardInfo.get(l.from); const b = cardInfo.get(l.to);
     let sh = "r"; let th = "r";
-    if (a && b && a.geometry !== b.geometry) {
+    if (a && b && a.geometry === b.geometry && a.geometry.cols > 1) {
+      // Boxes in one grid: leave by the side that faces the target (right/left across columns, bottom/top within a column).
+      if (b.pos.x > a.pos.x) { sh = "r"; th = "l"; } else if (b.pos.x < a.pos.x) { sh = "l"; th = "r"; } else if (b.pos.y > a.pos.y) { sh = "b"; th = "t"; } else { sh = "t"; th = "b"; }
+    } else if (a && b && a.geometry !== b.geometry) {
       const ga = a.geometry; const gb = b.geometry;
       if (gb.y >= ga.y + ga.h) { sh = "l"; th = "t"; } // down to the SaaS strip: leave by the left edge, so the line runs beside the cards, not through them
       else if (ga.y >= gb.y + gb.h) { sh = "t"; th = "b"; }
