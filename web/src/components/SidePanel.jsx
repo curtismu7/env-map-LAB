@@ -2,7 +2,8 @@ import React from "react";
 import ChangeLists from "./ChangeLists.jsx";
 import { RoleTag, StateTag } from "./Tags.jsx";
 
-// Floats over the canvas (static under it on a phone). Lists the workloads behind the clicked card. All text is React text: inert.
+// Nothing picked: a hint, static over the canvas (under it on a phone). A picked card: the workloads behind it, for the FloatingPanel to host.
+// All text is React text: inert.
 export default function SidePanel({ info, view }) {
   if (!info) {
     return (
@@ -16,7 +17,7 @@ export default function SidePanel({ info, view }) {
   }
   const { card, region } = info;
   return (
-    <aside className="side" aria-live="polite" data-testid="side">
+    <>
       <h2 data-testid="side-title">{card.title}</h2>
       <p className="sub">{region.label}. {card.count} {card.count === 1 ? "workload" : "workloads"}.</p>
       <ul className="items" data-testid="side-list">
@@ -33,6 +34,6 @@ export default function SidePanel({ info, view }) {
         ))}
       </ul>
       {card.note && <p className="note">{card.note}</p>}
-    </aside>
+    </>
   );
 }

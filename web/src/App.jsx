@@ -90,6 +90,10 @@ export default function App() {
             ))}
           </div>
           <span className="spacer" />
+          {route.tab === "diagram" && <span className="seg" role="group" aria-label="Detail">
+            <button type="button" aria-pressed={route.view !== "servers"} data-testid="detail-grouped" onClick={() => go({ view: route.view === "servers" ? "today" : route.view })} title="Boxes grouped by role or compose project">Grouped</button>
+            <button type="button" aria-pressed={route.view === "servers"} data-testid="detail-servers" onClick={() => go({ view: "servers" })} title="One box for each running server, with the calls between them">Each running server</button>
+          </span>}
           {!isFlowTab(route.tab) && <span className="seg" role="group" aria-label="Which arrangement">
             <button type="button" aria-pressed={route.view === "today"} data-testid="view-today" onClick={() => go({ view: "today" })}>Today</button>
             <button type="button" aria-pressed={route.view === "after"} data-testid="view-after" onClick={() => go({ view: "after" })} title="After: Kubernetes for servers only, every front end in Docker on the local machine">After: Kubernetes for servers only</button>

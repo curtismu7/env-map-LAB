@@ -171,6 +171,19 @@ function todayView(prepared, snapshot, resolve) {
 
 const ref = (w, extra = {}) => ({ env: w.env, envLabel: w.envLabel, name: w.name, role: w.role, roleSource: w.roleSource, ...extra });
 
+// One box per RUNNING workload (stopped and scaled-to-0 ones are left out), so each server's own ports, hosts and calls are visible.
+// Regions with many boxes get a column count so the layout can lay them out as a grid.
+function serversView(prepared, snapshot, resolve) {
+  const itemsByEnv = new Map(prepared.map((e) => [e.id, e.workloads.filter((w) => w.state !== 'off' && w.state !== 'down').map((w) => ({ w, card: { key: `s:${w.name}`, title: w.name, rank: 0, off: false } }))]));
+  const { regions, placement } = regionsFrom(prepared, itemsByEnv, 'servers');
+  for (const r of regions) {
+    r.columns = Math.max(1, Math.min(5, Math.ceil(r.cards.length / 14)));
+    for (const c of r.cards) c.subtitle = clip([...c.workloads[0].ports.map((p) => `:${p}`), ...c.workloads[0].hosts].join('  ') || c.workloads[0].kind, 90);
+  }
+  const l = buildLinks(snapshot, resolve, placement, regions);
+  return { name: 'servers', regions, links: l.links, linkStats: { resolved: l.links.length, unresolved: l.unresolved, dropped: l.dropped }, matrix: matrixOf(regions), summaries: summaryOf(regions), changes: null, notes: [] };
+}
+
 function afterView(prepared, snapshot, resolve) {
   const notes = [];
   let envs = prepared;
@@ -237,6 +250,6 @@ export function buildMap(snapshot, overrides = new Map()) {
   return {
     schema: snapshot.schema, takenAt: snapshot.takenAt,
     counts: { environments: prepared.length, workloads: all.length, links: snapshot.links.length, byName: all.filter((w) => w.roleSource === 'name').length, overridden: all.filter((w) => w.roleSource === 'override').length },
-    views: { today, after },
+    views: { today, after, servers: serversView(prepared, snapshot, resolve) },
   };
 }

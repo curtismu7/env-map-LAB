@@ -1,12 +1,12 @@
-// Hash routes: #/diagram, #/diagram/after, #/map, #/map/after, #/flows, #/standalone, #/ai-demo2 (a leading # without a slash works too).
+// Hash routes: #/diagram, #/diagram/after, #/diagram/servers (one box per running server), #/map, #/map/after, #/flows, #/standalone, #/ai-demo2 (a leading # without a slash works too).
 // Anything else is the diagram, today. `stack` is which hops a flows tab keeps: undefined = all of them.
 const TABS = ["map", "flows", "standalone", "ai-demo2"];
 export function parseRoute(hash) {
   const parts = String(hash || "").replace(/^#\/?/, "").split("/");
   const tab = TABS.includes(parts[0]) ? parts[0] : "diagram";
-  const view = parts[1] === "after" && (tab === "diagram" || tab === "map") ? "after" : "today";
+  const view = parts[1] === "after" && (tab === "diagram" || tab === "map") ? "after" : parts[1] === "servers" && tab === "diagram" ? "servers" : "today";
   return { tab, view };
 }
 export const isFlowTab = (tab) => tab === "flows" || tab === "standalone" || tab === "ai-demo2";
 export const stackOf = (tab) => (tab === "standalone" || tab === "ai-demo2" ? tab : undefined);
-export const routeHash = ({ tab, view }) => `#/${tab}${view === "after" && (tab === "diagram" || tab === "map") ? "/after" : ""}`;
+export const routeHash = ({ tab, view }) => `#/${tab}${view === "after" && (tab === "diagram" || tab === "map") ? "/after" : view === "servers" && tab === "diagram" ? "/servers" : ""}`;

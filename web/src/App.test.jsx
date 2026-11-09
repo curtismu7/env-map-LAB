@@ -88,6 +88,31 @@ describe("Mock", () => {
     expect(screen.queryByTestId("after-note")).toBeNull();
   });
 
+  it("the card details open in a movable panel: drag by the title bar, collapse, pop out button present, close", async () => {
+    lab = await startLab();
+    render(<App />);
+    await waitFor(() => expect(titles()).toContain("Web front ends"));
+    click(screen.getByText("Web front ends"));
+    const panel = await screen.findByTestId("side");
+    expect(panel).toHaveAttribute("role", "dialog");
+    const before = { left: panel.style.left, top: panel.style.top };
+    const bar = panel.querySelector(".fp-titlebar");
+    bar.setPointerCapture = () => {};
+    // jsdom has no PointerEvent, so send plain events of the same names with coordinates.
+    const ptr = (type, x, y) => bar.dispatchEvent(new MouseEvent(type, { bubbles: true, button: 0, clientX: x, clientY: y }));
+    ptr("pointerdown", 500, 200); ptr("pointermove", 420, 260); ptr("pointerup", 420, 260);
+    await waitFor(() => expect(panel.style.left).not.toBe(before.left));
+    expect(panel.style.top).not.toBe(before.top);
+    expect(screen.getByLabelText("Pop out to a new window")).toBeInTheDocument();
+    click(screen.getByLabelText("Collapse panel"));
+    expect(screen.queryByTestId("side-list")).toBeNull();
+    click(screen.getByLabelText("Expand panel"));
+    expect(screen.getByTestId("side-list")).toBeInTheDocument();
+    click(screen.getByLabelText("Close panel"));
+    await waitFor(() => expect(screen.queryByTestId("side-list")).toBeNull());
+    expect(screen.getByTestId("side")).toBeInTheDocument(); // the static "Pick a box" hint is back
+  });
+
   it("clicking a card lists its workloads; a name guess is shown as by name, unverified", async () => {
     lab = await startLab();
     render(<App />);
@@ -210,5 +235,22 @@ describe("Real", () => {
     lab = await startLab({ env });
     render(<App />);
     expect((await screen.findByTestId("warning")).textContent).toMatch(/roles file/);
+  });
+});
+
+describe("Each running server", () => {
+  it("the Detail toggle draws one box per running server, follows the hash, and Today brings the groups back", async () => {
+    lab = await startLab();
+    render(<App />);
+    await waitFor(() => expect(titles()).toContain("Web front ends"));
+    click(screen.getByTestId("detail-servers"));
+    await waitFor(() => expect(titles()).toContain("portal-ui"));
+    expect(window.location.hash).toBe("#/diagram/servers");
+    expect(titles()).not.toContain("Web front ends");
+    expect(titles()).not.toContain("Stopped"); // stopped servers are not drawn
+    expect(screen.getByTestId("detail-servers")).toHaveAttribute("aria-pressed", "true");
+    click(screen.getByTestId("view-today"));
+    await waitFor(() => expect(titles()).toContain("Web front ends"));
+    expect(screen.getByTestId("detail-grouped")).toHaveAttribute("aria-pressed", "true");
   });
 });

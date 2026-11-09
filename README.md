@@ -22,7 +22,7 @@ The toggle follows rule 19: `POST /api/mode` with exactly `{ "source": "mock" | 
 1. **Diagram** (`#/diagram`, `#/diagram/after`): three region boxes (local machine, namespaces) and a SaaS strip, cards inside, edges between cards (solid = seen in config or logs, dashed = configured only). Drag boxes, scroll to zoom, click a card for its workloads. The default view fits the diagram but never starts below 90% zoom; pan for the rest. **Reset layout** restores the box positions.
 2. **Map** (`#/map`, `#/map/after`): a summary per environment, the what-if lists (After only) and the "what lives where" matrix.
 3. **Agent flows**, **Standalone** and **AI-DEMO2** (`#/flows`, `#/standalone`, `#/ai-demo2`): numbered arrows for a sample personal agent and a sample digital worker, hop by hop, each hop looked up in the snapshot. The order comes from a flows file (`docs/snapshot-format.md`); Standalone and AI-DEMO2 keep only the hops that stack owns, plus shared and external ones.
-4. **Today / After** switch on the Diagram and Map tabs.
+4. **Today / After** switch on the Diagram and Map tabs. On the Diagram, **Detail: Grouped / Each running server** (`#/diagram/servers`) draws one box per running workload (stopped ones are left out) with every link between them. Clicking a box opens its details in a movable, resizable panel (drag the title bar; collapse, close, or pop out into its own window).
 
 ### How After is computed
 
