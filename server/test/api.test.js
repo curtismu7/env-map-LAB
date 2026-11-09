@@ -197,8 +197,8 @@ test('Host check and same-origin writes (mode and reset)', async () => {
     }
     // X-Forwarded-Host is client-controlled: a spoofed one naming the attacker's site does not make its Origin same-origin.
     assert.equal((await post(url, '/api/mode', { source: 'mock' }, { origin: 'http://evil.example', 'x-forwarded-host': 'evil.example' })).status, 403);
-    // A forwarded loopback name is still honoured, so a local proxy keeps working.
-    assert.equal((await post(url, '/api/mode', { source: 'mock' }, { origin: 'http://localhost:9999', 'x-forwarded-host': 'localhost:9999' })).status, 200);
+    // Forwarded headers are ignored on a loopback Host (family rule): only a LAB_ALLOWED_HOSTS Host may vouch for a proxy.
+    assert.equal((await post(url, '/api/mode', { source: 'mock' }, { origin: 'http://localhost:9999', 'x-forwarded-host': 'localhost:9999', 'x-forwarded-proto': 'http' })).status, 403);
     const r = await get(url, '/api/info');
     assert.match(r.headers.get('content-security-policy'), /frame-ancestors 'none'/);
     assert.equal(r.headers.get('x-frame-options'), 'DENY');

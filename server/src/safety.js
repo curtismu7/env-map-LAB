@@ -76,6 +76,15 @@ export function hostCheck(req, res, next) {
   next();
 }
 
+export function isProxiedSameOrigin(headers, env = process.env) {
+  const raw = String(headers.host || '').trim().toLowerCase();
+  const name = raw.startsWith('[') ? '' : raw.replace(/:\d+$/, '');
+  const xfh = String(headers['x-forwarded-host'] || '').trim().toLowerCase();
+  const xfp = String(headers['x-forwarded-proto'] || '').trim().toLowerCase();
+  return name !== '' && allowedExtraHosts(env).has(name) && xfh !== '' && (xfp === 'https' || xfp === 'http')
+    && headers.origin === `${xfp}://${xfh}`;
+}
+
 const WRITE = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 export function sameOriginWrites(req, res, next) {
   if (!WRITE.has(req.method)) return next();
@@ -83,12 +92,11 @@ export function sameOriginWrites(req, res, next) {
   if (site && site !== 'same-origin' && site !== 'none') return res.status(403).json({ error: 'cross_origin', message: 'writes must be same-origin' });
   const origin = req.headers.origin;
   if (origin) {
-    // Behind a proxy the browser origin can differ from Host, so X-Forwarded-Host is compared instead. Any client can send that header,
-    // so it counts only when its host name is loopback or on LAB_ALLOWED_HOSTS; otherwise Host is used.
-    const fwd = String(req.headers['x-forwarded-host'] || '').toLowerCase();
-    const fwdName = fwd.startsWith('[') ? fwd.slice(0, fwd.indexOf(']') + 1) : fwd.replace(/:\d+$/, '');
-    const trusted = fwd && (isLoopbackHost(fwdName) || allowedExtraHosts().has(fwdName));
-    const host = (trusted ? fwd : String(req.headers.host || '')).toLowerCase();
+    // Behind the family lab-proxy the browser's Origin is the launcher's while Host is this lab's LAB_ALLOWED_HOSTS name.
+    // X-Forwarded-Host/-Proto are believed only on such a Host (never loopback, never any other Host), and only when the
+    // Origin is exactly X-Forwarded-Proto://X-Forwarded-Host; everywhere else Origin must match Host.
+    if (isProxiedSameOrigin(req.headers)) return next();
+    const host = String(req.headers.host || '').toLowerCase();
     let ok = false;
     try { ok = new URL(origin).host.toLowerCase() === host; } catch { /* malformed */ }
     if (!ok) return res.status(403).json({ error: 'cross_origin', message: 'writes must be same-origin' });

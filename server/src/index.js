@@ -1,8 +1,10 @@
 import { installNetguard } from './netguard.js';
 import { startHttpServer, createApp } from './app.js';
 import { allPassed, runChecks } from './doctor.js';
-import { assertBindAllowed, bindHost, resolvePort } from './safety.js';
+import { allowedExtraHosts, assertBindAllowed, bindHost, resolvePort } from './safety.js';
 import { modeFrom, realConfig } from './config.js';
+
+allowedExtraHosts(); // a malformed LAB_ALLOWED_HOSTS stops the start before any socket or timer
 
 installNetguard(); // before anything else can open a socket
 
