@@ -42,11 +42,11 @@ A role comes from the roles file next to the snapshot (`env-map.roles.json`, set
 ## Real: collect a snapshot (owner-run, read-only)
 
 ```sh
-scripts/collect.sh -o ~/env-map/snapshot.json my-context/my-namespace other-context/other-namespace
+scripts/collect.sh [--running-only] -o ~/env-map/snapshot.json my-context/my-namespace other-context/other-namespace
 # then, in ~/Development/.env:   ENV_MAP_SNAPSHOT=/Users/you/env-map/snapshot.json
 ```
 
-It runs `docker ps -a` and `kubectl get deploy,sts` / `kubectl get ingress` (a jsonpath of names, replica counts and ingress hosts only; no env vars, images, secrets, exec, logs or writes) and refuses an output path inside this repo. Links between things are not collected: add them to the snapshot by hand.
+It runs `docker ps -a` and `kubectl get deploy,sts` / `kubectl get ingress` (a jsonpath of names, replica counts and ingress hosts only; no env vars, images, secrets, exec, logs or writes) and refuses an output path inside this repo. `--running-only` leaves out everything stopped or scaled to 0, so the map shows the current running config. Links between things are not collected: add them to the snapshot by hand.
 
 ## Run
 

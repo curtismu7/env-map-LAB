@@ -102,3 +102,11 @@ test('collect.sh rejects a bad CONTEXT/NAMESPACE and a relative or missing outpu
   assert.equal(run1([]).status, 2);
   assert.equal(run1(['--wat']).status, 2);
 });
+
+test('buildSnapshot runningOnly keeps only workloads with a ready replica and counts the rest', () => {
+  const { snapshot, notRunning } = buildSnapshot({ local: DOCKER, namespaces: [{ spec: 'ctx/team-a', workloads: K8S, ingress: ING }], runningOnly: true });
+  const names = snapshot.environments.flatMap((e) => e.workloads.map((w) => `${e.id}/${w.name}`)).sort();
+  assert.deepEqual(names, ['local/orders-api', 'local/portal-ui', 'team-a/orders-api', 'team-a/orders-api-statefulset', 'team-a/orders-ui']);
+  assert.equal(notRunning, 3);
+  assert.equal(buildSnapshot({ local: DOCKER }).snapshot.environments[0].workloads.length > 2, true);
+});

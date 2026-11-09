@@ -3,7 +3,7 @@
 // docker and kubectl for exactly those fields, so there is no environment variable, image, label set, annotation or secret to leak here.
 // Roles are guessed from the name (roleSource "name"), then replaced by an optional env-map.roles.json next to the output file.
 //
-//   node scripts/collect.mjs --out FILE [--local FILE [--local-label TEXT]] [--ns CONTEXT/NAMESPACE WORKLOADS_FILE INGRESS_FILE]...
+//   node scripts/collect.mjs --out FILE [--running-only] [--local FILE [--local-label TEXT]] [--ns CONTEXT/NAMESPACE WORKLOADS_FILE INGRESS_FILE]...
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -63,10 +63,12 @@ function uniqueNames(ws) {
   });
 }
 
-export function buildSnapshot({ local, localLabel, namespaces = [], overrides = new Map(), now = new Date() }) {
-  const environments = []; const used = new Set(); let skipped = 0;
+// runningOnly: keep only workloads with at least one ready replica (the current running config); stopped and scaled-to-0 ones are left out.
+export function buildSnapshot({ local, localLabel, namespaces = [], overrides = new Map(), runningOnly = false, now = new Date() }) {
+  const environments = []; const used = new Set(); let skipped = 0; let notRunning = 0;
   const addEnv = (id, label, kind, context, found) => {
     skipped += found.skipped;
+    if (runningOnly) { const up = found.workloads.filter((w) => w.ready > 0); notRunning += found.workloads.length - up.length; found = { ...found, workloads: up }; }
     const base = slug(id); let eid = base; for (let n = 2; used.has(eid); n++) eid = `${base}-${n}`; used.add(eid);
     const workloads = uniqueNames(found.workloads).map((w) => {
       const o = overrides.get(`${eid}/${w.name}`) ?? overrides.get(w.name);
@@ -80,18 +82,19 @@ export function buildSnapshot({ local, localLabel, namespaces = [], overrides = 
     const [context, name] = ns.spec.split('/');
     addEnv(name, `Namespace ${name}`, 'k8s', context, k8sWorkloads(ns.workloads, ns.ingress));
   }
-  return { snapshot: { schema: 'env-map/1', takenAt: now.toISOString().replace(/\.\d+Z$/, 'Z'), environments, links: [] }, skipped };
+  return { snapshot: { schema: 'env-map/1', takenAt: now.toISOString().replace(/\.\d+Z$/, 'Z'), environments, links: [] }, skipped, notRunning };
 }
 
 const inside = (child, parent) => child === parent || child.startsWith(parent + path.sep);
 
 function main(argv) {
-  let out; let localFile; let localLabel; const nsArgs = [];
+  let out; let localFile; let localLabel; let runningOnly = false; const nsArgs = [];
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--out') out = argv[++i];
     else if (a === '--local') localFile = argv[++i];
     else if (a === '--local-label') localLabel = argv[++i];
+    else if (a === '--running-only') runningOnly = true;
     else if (a === '--ns') { nsArgs.push({ spec: argv[++i], wf: argv[++i], inf: argv[++i] }); }
     else { console.error(`collect: unknown argument ${a}`); return 2; }
   }
@@ -102,13 +105,13 @@ function main(argv) {
   const read = (f) => (f ? fs.readFileSync(f, 'utf8') : '');
   const target = path.join(dir, path.basename(out));
   const { map } = loadOverrides(target);
-  const { snapshot, skipped } = buildSnapshot({ local: localFile ? read(localFile) : undefined, localLabel, namespaces: nsArgs.map((n) => ({ spec: n.spec, workloads: read(n.wf), ingress: read(n.inf) })), overrides: map });
+  const { snapshot, skipped, notRunning } = buildSnapshot({ runningOnly, local: localFile ? read(localFile) : undefined, localLabel, namespaces: nsArgs.map((n) => ({ spec: n.spec, workloads: read(n.wf), ingress: read(n.inf) })), overrides: map });
   const text = `${JSON.stringify(snapshot, null, 2)}\n`;
   const check = parseSnapshot(text);
   if (!check.ok) { console.error(`collect: the snapshot would not validate: ${check.problems.slice(0, 3).join('; ')}`); return 1; }
   fs.writeFileSync(target, text, { mode: 0o600 });
   const total = snapshot.environments.reduce((n, e) => n + e.workloads.length, 0);
-  console.log(`collect: wrote ${snapshot.environments.length} environment(s), ${total} workload(s)${skipped ? `, skipped ${skipped} with unusable names` : ''}. Links are not collected: add them by hand (docs/snapshot-format.md).`);
+  console.log(`collect: wrote ${snapshot.environments.length} environment(s), ${total} workload(s)${skipped ? `, skipped ${skipped} with unusable names` : ''}${runningOnly ? `, left out ${notRunning} not running` : ''}. Links are not collected: add them by hand (docs/snapshot-format.md).`);
   return 0;
 }
 
