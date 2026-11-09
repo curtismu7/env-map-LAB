@@ -12,7 +12,8 @@ const SECTIONS = [
   ["stoppedLocalServers", "Stopped local servers, not planned", "Servers stopped on the local machine with no Kubernetes match. Nothing is planned for them."],
 ];
 
-export default function ChangeLists({ changes, compact = false }) {
+// isOpen / onToggle (both optional): when given, each list has a Collapse / Expand button; without them every list is always open.
+export default function ChangeLists({ changes, compact = false, isOpen, onToggle }) {
   if (!changes) return null;
   return (
     <div className="changes" data-testid="changes">
@@ -21,9 +22,12 @@ export default function ChangeLists({ changes, compact = false }) {
         const list = changes[key] || [];
         return (
           <section key={key} className="change" data-testid={`change-${key}`}>
-            <h3>{title} <span className="count">{list.length}</span></h3>
-            {!compact && <p className="muted">{help}</p>}
-            {list.length === 0 ? <p className="muted">None.</p> : (
+            <h3>
+              {onToggle ? <button type="button" className="tw" aria-expanded={isOpen(key)} data-testid={`tw-change-${key}`} onClick={() => onToggle(key)}><span aria-hidden="true">{isOpen(key) ? "▾" : "▸"}</span> {title}</button> : title}
+              {" "}<span className="count">{list.length}</span>
+            </h3>
+            {(!onToggle || isOpen(key)) && !compact && <p className="muted">{help}</p>}
+            {onToggle && !isOpen(key) ? null : list.length === 0 ? <p className="muted">None.</p> : (
               <ul className="items items--inline">
                 {list.map((x) => (
                   <li key={`${x.env}/${x.name}`}>
