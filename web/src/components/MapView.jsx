@@ -2,14 +2,26 @@ import React from "react";
 import ChangeLists from "./ChangeLists.jsx";
 import { toneOf } from "../lib/layout.js";
 
-const ROLES = [["server", "servers"], ["frontend", "front ends"], ["lab", "labs"], ["external", "external"]];
+const ROLES = [["server", "server", "servers"], ["frontend", "front end", "front ends"], ["lab", "lab", "labs"], ["external", "external", "external"]];
+
+// A heading with a count, then one name per line in a box that scrolls when long. All text is React text: inert.
+function NameList({ title, names, more, testId }) {
+  if (!names.length) return null;
+  return (
+    <>
+      <h3>{title} <span className="count">{names.length + more}</span></h3>
+      <ul className="namelist" data-testid={testId}>{names.map((n) => <li key={n} className="mono">{n}</li>)}</ul>
+      {more > 0 && <p className="muted">and {more} more</p>}
+    </>
+  );
+}
 
 function Twisty({ open, onToggle, id, children }) {
   return <button type="button" className="tw" aria-expanded={open} data-testid={`tw-${id}`} onClick={onToggle}><span aria-hidden="true">{open ? "▾" : "▸"}</span> {children}</button>;
 }
 
 function Summary({ s, tone, open, onToggle }) {
-  const roles = ROLES.filter(([k]) => s.roles[k] > 0).map(([k, word]) => `${s.roles[k]} ${word}`).join(", ");
+  const roles = ROLES.filter(([k]) => s.roles[k] > 0).map(([k, one, many]) => `${s.roles[k]} ${s.roles[k] === 1 ? one : many}`);
   return (
     <section className={`env tone-${tone}`} data-testid={`env-${s.id}`}>
       <h2><Twisty open={open} onToggle={onToggle} id={`env-${s.id}`}>{s.label}</Twisty></h2>
@@ -19,12 +31,13 @@ function Summary({ s, tone, open, onToggle }) {
         <dt>Workloads</dt><dd>{s.total}</dd>
         <dt>Running</dt><dd>{s.running}</dd>
         <dt>{s.kind === "k8s" ? "At 0 or down" : "Stopped or down"}</dt><dd>{s.off}</dd>
-        {roles && <><dt>By role</dt><dd>{roles}</dd></>}
         <dt>Hosts</dt><dd>{s.hosts.length + s.moreHosts}</dd>
       </dl>
-      {s.runningNames.length > 0 && <><h3>Running</h3><p className="mono">{s.runningNames.join(", ")}{s.moreRunning ? `, and ${s.moreRunning} more` : ""}</p></>}
-      {s.offNames.length > 0 && <><h3>{s.kind === "k8s" ? "At 0 or down" : "Stopped or down"}</h3><p className="mono">{s.offNames.join(", ")}{s.moreOff ? `, and ${s.moreOff} more` : ""}</p></>}
-      {s.hosts.length > 0 && <><h3>Hosts</h3><p className="mono">{s.hosts.join("  ")}{s.moreHosts ? `  and ${s.moreHosts} more` : ""}</p></>}</>}
+      {roles.length > 0 && <><h3>By role</h3><p className="chips">{roles.map((r) => <span key={r} className="tag">{r}</span>)}</p></>}
+      <NameList title="Running" names={s.runningNames} more={s.moreRunning} testId={`running-${s.id}`} />
+      <NameList title={s.kind === "k8s" ? "At 0 or down" : "Stopped or down"} names={s.offNames} more={s.moreOff} testId={`off-${s.id}`} />
+      <NameList title="Hosts" names={s.hosts} more={s.moreHosts} testId={`hosts-${s.id}`} />
+      </>}
     </section>
   );
 }

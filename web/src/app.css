@@ -108,6 +108,7 @@ button[aria-pressed="true"]:hover:not(:disabled), button[aria-selected="true"]:h
 .env dl { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; font-size: 0.85rem; }
 .env dt { color: var(--muted); }
 .env dd { margin: 0; font-family: var(--font-mono); text-align: right; overflow-wrap: anywhere; }
+.env h3 .count { font-weight: 600; color: var(--text-body); background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 0 6px; margin-left: 4px; letter-spacing: 0; }
 .env h3 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 14px 0 6px; }
 .env p { font-size: 0.8rem; margin: 4px 0; }
 .sec { font-size: 1rem; margin: 1.2rem 0 0.2rem; }
@@ -158,3 +159,11 @@ button[aria-pressed="true"]:hover:not(:disabled), button[aria-selected="true"]:h
 .tw:focus-visible { outline: 2px solid var(--on-accent-border); }
 .toolbar--map { margin: 0.5rem 0; display: flex; gap: 6px; flex-wrap: wrap; }
 .matrix th[scope="row"] .tw { font-weight: 500; }
+
+/* Name lists in the environment cards: one per line, scrolls when long */
+.env dd { white-space: nowrap; }
+.env .chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.env .chips .tag { margin-right: 0; font-size: 0.78rem; padding: 1px 8px; }
+.namelist { list-style: none; margin: 4px 0; padding: 0; max-height: 15rem; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); }
+.namelist li { padding: 3px 8px; font-size: 0.78rem; border-bottom: 1px dotted var(--border); overflow-wrap: anywhere; }
+.namelist li:last-child { border-bottom: 0; }
