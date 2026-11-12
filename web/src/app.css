@@ -1,3 +1,4 @@
+html { font-size: var(--fs, 16px); }
 /* Where Everything Runs. Layout only: every colour comes from the shared stylesheet's tokens (standalone-ui.css, vendored and pinned). */
 .app { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; padding-bottom: 1rem; }
 .page { max-width: 1100px; margin: 0 auto; padding: 0.25rem 0 1rem; width: 100%; }
@@ -15,7 +16,7 @@ a { color: var(--status-info); text-underline-offset: 2px; }
 .page:focus { outline: none; }
 
 /* App shell (STANDALONE-UI-PATTERNS 1): Core Dark bar in both themes, Ping Red gradient rule */
-.shell-bar { display: flex; align-items: center; gap: 0.5rem 1.25rem; flex-wrap: wrap; padding: 0.6rem 1rem; background: var(--box-dark); color: var(--on-box); border-bottom: 3px solid transparent; border-image: var(--accent-gradient) 1; margin: 0 -16px; }
+.shell-bar { display: flex; align-items: center; gap: 0.5rem 1.25rem; flex-wrap: wrap; padding: 0.6rem 1rem; background: var(--box-dark); color: var(--on-box); border-bottom: 3px solid transparent; border-image: var(--accent-gradient) 1; margin: 0 -16px; position: relative; }
 .shell-brand { display: inline-flex; align-items: center; gap: 0.6rem; font-weight: 700; letter-spacing: 0.02em; flex-wrap: wrap; }
 .shell-logo { width: 1.9rem; height: 1.9rem; border-radius: 4px; background: var(--accent-gradient); color: var(--on-accent); display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem; }
 .shell-badge { padding: 0.1rem 0.55rem; border-radius: 999px; background: var(--accent-gradient); color: var(--on-accent); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }

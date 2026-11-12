@@ -1,7 +1,9 @@
 import React from "react";
+import fs from "node:fs";
 import { getMap, getFlows, getJson, setMode } from "./api";
-import { THEMES, applyTheme, savedTheme } from "./theme";
+import { applyTheme, savedTheme } from "./theme";
 import { parseRoute, routeHash, isFlowTab, stackOf } from "./lib/route.js";
+import TopMenu, { applyFontSize } from "./top-menu/TopMenu.jsx";
 import ShelfLink from "./components/ShelfLink.jsx";
 import DiagramView from "./components/DiagramView.jsx";
 import MapView from "./components/MapView.jsx";
@@ -16,6 +18,9 @@ export const BANNER = {
 };
 export const AFTER_NOTE = "After: Kubernetes for servers only, every front end in Docker on the local machine. Computed from each workload's role; it is a what-if, not a plan. A role guessed from the workload's name is marked \"by name, unverified\".";
 
+// Version for the TopMenu About button: read once from the lab root package.json.
+const LAB_VERSION = (() => { try { return JSON.parse(fs.readFileSync(new URL("../../package.json", import.meta.url), "utf8")).version || null; } catch { return null; } })();
+
 export default function App() {
   const [route, setRoute] = React.useState(() => parseRoute(window.location.hash));
   const [info, setInfo] = React.useState(undefined); // undefined = loading, null = failed
@@ -26,8 +31,13 @@ export default function App() {
   const [resetNonce, setResetNonce] = React.useState(0);
   const [switchError, setSwitchError] = React.useState("");
   const [theme, setTheme] = React.useState(savedTheme);
+  const [fontStep, setFontStep] = React.useState(() => { try { const f = localStorage.getItem("envmap.font"); return ["S", "M", "L"].includes(f) ? f : "M"; } catch { return "M"; } });
 
   React.useEffect(() => { applyTheme(theme); }, [theme]);
+  React.useEffect(() => {
+    applyFontSize(fontStep);
+    try { localStorage.setItem("envmap.font", fontStep); } catch { /* blocked */ }
+  }, [fontStep]);
   React.useEffect(() => {
     const on = () => setRoute(parseRoute(window.location.hash));
     window.addEventListener("hashchange", on);
@@ -63,20 +73,15 @@ export default function App() {
         <span className="shell-brand"><span className="shell-logo" aria-hidden="true">WR</span> Where Everything Runs <span className="shell-badge" data-testid="mode">{info ? (real ? "Real" : "Mock") : "..."}</span></span>
         <span className="shell-spacer" />
         <span className="shell-right">
-          {info && (
-            <span className="seg" role="group" aria-label="Data source">
-              <button type="button" aria-pressed={!real} data-testid="mode-mock" onClick={() => switchTo("mock")} title="Show the made-up sample snapshot shipped in this repo">Mock</button>
-              <button type="button" aria-pressed={real} data-testid="mode-real" disabled={!info.realAvailable && !real} aria-describedby={realHint ? "real-hint" : undefined}
-                title={info.realAvailable ? "Show your own snapshot (ENV_MAP_SNAPSHOT, read-only, loopback only)" : realHint}
-                onClick={() => switchTo("real")}>Real</button>
-            </span>
-          )}
-          <ShelfLink />
-          <label className="shell-theme">Theme
-            <select value={theme} onChange={(e) => setTheme(e.target.value)} data-testid="theme">
-              {THEMES.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </label>
+          <TopMenu
+            mode={info && { value: real ? "real" : "mock", onChange: switchTo, realAvailable: info.realAvailable, realHint: realHint || undefined }}
+            theme={{ value: theme, onChange: setTheme }}
+            fontSize={{ value: fontStep, onChange: setFontStep }}
+            help={{ href: "https://github.com/curtismu7/env-map-LAB#readme" }}
+            version={LAB_VERSION}
+          >
+            <ShelfLink />
+          </TopMenu>
         </span>
       </header>
       <main className="page page--wide" id="main" tabIndex={-1}>
