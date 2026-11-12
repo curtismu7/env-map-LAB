@@ -15,5 +15,13 @@ export async function setMode(source) {
   return { ok: r.ok, status: r.status, body };
 }
 
+// POST /api/reset (rule 3): the server is back to its launch mode.
+export async function postReset() {
+  const r = await fetch("/api/reset", { method: "POST" });
+  let body = {};
+  try { body = await r.json(); } catch { /* not JSON */ }
+  return { ok: r.ok, status: r.status, body };
+}
+
 export const getMap = () => getJson("/api/map");
 export const getFlows = () => getJson("/api/flows");

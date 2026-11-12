@@ -1,6 +1,6 @@
 import React from "react";
 import fs from "node:fs";
-import { getMap, getFlows, getJson, setMode } from "./api";
+import { getMap, getFlows, getJson, postReset, setMode } from "./api";
 import { applyTheme, savedTheme } from "./theme";
 import { parseRoute, routeHash, isFlowTab, stackOf } from "./lib/route.js";
 import TopMenu, { applyFontSize } from "./top-menu/TopMenu.jsx";
@@ -60,6 +60,15 @@ export default function App() {
     setEpoch((e) => e + 1);
   }
   const go = (next) => { const r = { ...route, ...next }; window.location.hash = routeHash(r); setRoute(r); };
+  // Reset (rule 3): the server is back to its launch mode, the data reloads (epoch bump), and the layout is restored
+  // in the browser (the same resetNonce the toolbar's Reset layout button uses).
+  async function resetLab() {
+    setSwitchError("");
+    const r = await postReset();
+    if (!r.ok) setSwitchError(r.body?.detail || `Could not reset (HTTP ${r.status}).`);
+    setEpoch((e) => e + 1);
+    setResetNonce((n) => n + 1);
+  }
 
   const realHint = info && !info.realAvailable ? info.realHint || "Real is not configured. Mock keeps working." : "";
   const banner = info === undefined ? "Loading..." : info === null ? BANNER.unknown : real ? BANNER.real : BANNER.mock;
@@ -79,6 +88,7 @@ export default function App() {
             fontSize={{ value: fontStep, onChange: setFontStep }}
             help={{ href: "https://github.com/curtismu7/env-map-LAB#readme" }}
             version={LAB_VERSION}
+            onReset={resetLab}
           >
             <ShelfLink />
           </TopMenu>

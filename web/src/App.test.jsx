@@ -157,7 +157,7 @@ describe("Mock", () => {
     await screen.findByTestId("matrix");
     expect(screen.getByTestId("view-after")).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByTestId("diagram")).toBeNull();
-    expect(screen.queryByTestId("reset")).toBeNull();
+    expect(within(screen.getByRole("main")).queryByTestId("reset")).toBeNull();
   });
 
   it("Reset layout is on the diagram and restores the computed layout without breaking the view", async () => {
@@ -165,7 +165,7 @@ describe("Mock", () => {
     render(<App />);
     await waitFor(() => expect(titles()).toContain("Data"));
     const before = document.querySelectorAll(".fcard").length;
-    click(screen.getByTestId("reset"));
+    click(within(screen.getByRole("main")).getByTestId("reset"));
     await waitFor(() => expect(document.querySelectorAll(".fcard").length).toBe(before));
   });
 
