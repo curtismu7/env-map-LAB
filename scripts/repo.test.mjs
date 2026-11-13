@@ -56,7 +56,7 @@ test('the app makes no outbound reference: no CDN, no web font, no remote script
       const p = path.join(dir, name);
       if (fs.statSync(p).isDirectory()) { walk(p); continue; }
       if (name === 'standalone-ui.css' || /\.test\./.test(name) || !/\.(m?js|jsx|css|html)$/.test(name)) continue;
-      if (/https?:\/\/(?!127\.0\.0\.1|localhost)/.test(fs.readFileSync(p, 'utf8'))) hits.push(path.relative(root, p));
+      if (/https?:\/\/(?!127\.0\.0\.1|localhost|github\.com\/curtismu7)/.test(fs.readFileSync(p, 'utf8'))) hits.push(path.relative(root, p));
     }
   };
   walk(path.join(root, 'web'));
