@@ -5,6 +5,7 @@ import { applyTheme, savedTheme } from "./theme";
 import { parseRoute, routeHash, isFlowTab, stackOf } from "./lib/route.js";
 import TopMenu, { applyFontSize } from "./top-menu/TopMenu.jsx";
 import ShelfLink from "./components/ShelfLink.jsx";
+import VerifyMark from "./components/VerifyMark.jsx";
 import DiagramView from "./components/DiagramView.jsx";
 import MapView from "./components/MapView.jsx";
 import FlowsView from "./components/FlowsView.jsx";
@@ -91,6 +92,7 @@ export default function App() {
             onReset={resetLab}
           >
             <ShelfLink />
+            <VerifyMark id="env-map-lab" />
           </TopMenu>
         </span>
       </header>
