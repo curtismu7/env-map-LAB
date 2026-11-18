@@ -4,6 +4,8 @@ import { getMap, getFlows, getJson, postReset, setMode } from "./api";
 import { applyTheme, savedTheme } from "./theme";
 import { parseRoute, routeHash, isFlowTab, stackOf } from "./lib/route.js";
 import TopMenu, { applyFontSize } from "./top-menu/TopMenu.jsx";
+import TalkTrackDialog from "./talk-track/TalkTrackDialog.jsx";
+import talkMd from "../../docs/talk-track.md?raw";
 import ShelfLink from "./components/ShelfLink.jsx";
 import VerifyMark from "./components/VerifyMark.jsx";
 import DiagramView from "./components/DiagramView.jsx";
@@ -32,6 +34,15 @@ export default function App() {
   const [resetNonce, setResetNonce] = React.useState(0);
   const [switchError, setSwitchError] = React.useState("");
   const [theme, setTheme] = React.useState(savedTheme);
+  const [talkOpen, setTalkOpen] = React.useState(false);
+  const talkSteps = (() => {
+    const steps = []; let n = 0;
+    for (const line of talkMd.split("\n")) {
+      const m = line.match(/^\d+\.\s+\*\*(.+?)\.\*\*\s*(.*)$/);
+      if (m) { n += 1; steps.push({ id: `s${n}`, title: m[1], say: m[2] }); }
+    }
+    return steps.length ? steps : [{ id: "s1", title: "Talk track", say: talkMd.slice(0, 600) }];
+  })();
   const [fontStep, setFontStep] = React.useState(() => { try { const f = localStorage.getItem("envmap.font"); return ["S", "M", "L"].includes(f) ? f : "M"; } catch { return "M"; } });
 
   React.useEffect(() => { applyTheme(theme); }, [theme]);
@@ -86,6 +97,7 @@ export default function App() {
           <TopMenu
             mode={info && { value: real ? "real" : "mock", onChange: switchTo, realAvailable: info.realAvailable, realHint: realHint || undefined }}
             theme={{ value: theme, onChange: setTheme }}
+            talkTrack={{ active: talkOpen, onToggle: () => setTalkOpen((v) => !v) }}
             fontSize={{ value: fontStep, onChange: setFontStep }}
             help={{ href: "https://github.com/curtismu7/env-map-LAB#readme" }}
             version={LAB_VERSION}
@@ -133,6 +145,8 @@ export default function App() {
           : route.tab === "map" ? <MapView view={view} />
             : <DiagramView key={`${info?.source}|${map.takenAt}|${route.view}`} view={view} viewName={route.view} resetNonce={resetNonce} />}
       </main>
+      <TalkTrackDialog isOpen={talkOpen} onClose={() => setTalkOpen(false)} talk={talkSteps} />
+
     </div>
   );
 }
