@@ -79,11 +79,11 @@ export default function MapView({ view }) {
       <div className="envgrid">{view.summaries.map((s) => <Summary key={s.id} s={s} tone={tones.get(s.id)} open={isOpen(`env:${s.id}`)} onToggle={() => toggle(`env:${s.id}`)} />)}</div>
       {view.changes && (
         <>
-          <h2 className="sec"><Twisty open={isOpen("changes")} onToggle={() => toggle("changes")} id="changes">What changes</Twisty></h2>
+          <h2 className="sec"><span className="step-num" aria-hidden="true">1</span><Twisty open={isOpen("changes")} onToggle={() => toggle("changes")} id="changes">What changes</Twisty></h2>
           {isOpen("changes") && <ChangeLists changes={view.changes} isOpen={(k) => isOpen(`change:${k}`)} onToggle={(k) => toggle(`change:${k}`)} />}
         </>
       )}
-      <h2 className="sec"><Twisty open={isOpen("matrix")} onToggle={() => toggle("matrix")} id="matrix">What lives where</Twisty></h2>
+      <h2 className="sec"><span className="step-num" aria-hidden="true">2</span><Twisty open={isOpen("matrix")} onToggle={() => toggle("matrix")} id="matrix">What lives where</Twisty></h2>
       {isOpen("matrix") && <><p className="muted">A <abbr className="guess" title="role guessed from the name, unverified">?</abbr> after a name means its role was guessed from the name and is unverified.</p>
       <div className="matrix-wrap" tabIndex={0} role="region" aria-label="What lives where, scrollable">
         <table className="matrix" data-testid="matrix">

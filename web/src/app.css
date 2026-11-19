@@ -102,7 +102,9 @@ button[aria-pressed="true"]:hover:not(:disabled), button[aria-selected="true"]:h
 
 /* Map tab */
 .mapview { margin-top: 0.75rem; }
-.envgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.step-num { display: inline-grid; place-items: center; min-width: 1.4rem; height: 1.4rem; border-radius: 999px; background: var(--accent-gradient); color: var(--on-accent); font: 700 0.75rem var(--font-mono); margin-right: 0.5em; vertical-align: 2px; }
+.envgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 900px) { .envgrid { grid-template-columns: 1fr; } }
 .env { border: 1px solid var(--border); border-top: 4px solid var(--c); background: var(--surface); border-radius: 8px; padding: 14px; min-width: 0; }
 .env h2 { margin: 0; font-size: 1rem; overflow-wrap: anywhere; }
 .env .sub { color: var(--muted); font-size: 0.8rem; margin: 2px 0 10px; }
