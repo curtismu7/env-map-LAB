@@ -5,7 +5,6 @@
 .git
 .github
 .githooks
-docs
 scripts
 Dockerfile
 LICENSE
