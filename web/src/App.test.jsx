@@ -1,9 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import App, { AFTER_NOTE, BANNER } from "./App";
+import App, { AFTER_NOTE, MODE_LINES } from "./App";
 import { startLab } from "./testServer";
 
 let lab; let dirs = [];
@@ -52,12 +52,40 @@ describe("Mock", () => {
     expect(screen.getByTestId("hop-ghost")).toBeInTheDocument();
   });
 
-  it("banner first, Real disabled with a how-to tooltip, the diagram draws regions and cards", async () => {
+  it("the MOCK modal stays closed after a reload in the same session, and says so when /api/info does not answer", async () => {
+    lab = await startLab();
+    const first = render(<App />);
+    await screen.findByTestId("diagram");
+    fireEvent.click(screen.getByTestId("mode-modal-ok"));
+    first.unmount();
+    render(<App />);
+    await screen.findByTestId("diagram");
+    expect(screen.queryByTestId("mode-modal")).toBeNull();
+    cleanup();
+    sessionStorage.clear();
+    const real = globalThis.fetch;
+    const spy = vi.spyOn(globalThis, "fetch").mockImplementation((url, ...rest) => (String(url).includes("/api/info") ? Promise.reject(new Error("down")) : real(url, ...rest)));
+    try {
+      render(<App />);
+      const modal = await screen.findByTestId("mode-modal");
+      await waitFor(() => expect(modal.textContent).toContain(MODE_LINES.unknown));
+      expect(modal).toHaveAttribute("data-mode", "mock");
+    } finally { spy.mockRestore(); }
+  });
+
+  it("opens on the MOCK modal (no banner), Real disabled with a how-to tooltip, the diagram draws regions and cards", async () => {
     lab = await startLab();
     render(<App />);
     await screen.findByTestId("diagram");
-    expect(screen.getByTestId("banner").textContent).toBe(BANNER.mock);
-    expect(document.querySelector("main").firstElementChild).toBe(screen.getByTestId("banner"));
+    const modal = screen.getByTestId("mode-modal");
+    expect(modal).toHaveAttribute("data-mode", "mock");
+    expect(modal.textContent).toContain("MOCK");
+    expect(modal.textContent).toContain(MODE_LINES.mock);
+    expect(modal.textContent).toMatch(/every name and host fictional/);
+    expect(screen.queryByTestId("banner")).toBeNull();
+    expect(document.querySelector(".banner")).toBeNull();
+    fireEvent.click(screen.getByTestId("mode-modal-ok"));
+    expect(screen.queryByTestId("mode-modal")).toBeNull();
     const mode = screen.getByTestId("mode-select");
     expect(mode).toHaveValue("mock");
     const real = mode.querySelector('option[value="real"]');
@@ -184,15 +212,19 @@ describe("Real", () => {
     lab = await startLab({ env: realEnv(snapshot()) });
     render(<App />);
     await waitFor(() => expect(titles()).toContain("Servers"));
-    expect(screen.getByTestId("banner").textContent).toBe(BANNER.real);
-    expect(screen.getByTestId("banner")).toHaveAttribute("data-state", "live");
+    await waitFor(() => expect(screen.getByTestId("mode-modal")).toHaveAttribute("data-mode", "real"));
+    expect(screen.getByTestId("mode-modal").textContent).toContain(MODE_LINES.real);
+    expect(screen.getByTestId("mode-modal").textContent).toMatch(/do not share this screen with a customer/);
+    expect(screen.queryByTestId("banner")).toBeNull();
+    fireEvent.click(screen.getByTestId("mode-modal-ok"));
     const mode = screen.getByTestId("mode-select");
     expect(mode).toHaveValue("real");
     expect(mode.querySelector('option[value="real"]')).not.toBeDisabled();
     expect(document.querySelectorAll(".region").length).toBe(2);
     fireEvent.change(mode, { target: { value: "mock" } });
     await waitFor(() => expect(document.querySelectorAll(".region").length).toBe(5));
-    expect(screen.getByTestId("banner").textContent).toBe(BANNER.mock);
+    await waitFor(() => expect(screen.getByTestId("mode-modal")).toHaveAttribute("data-mode", "mock"));
+    expect(screen.getByTestId("mode-modal").textContent).toContain(MODE_LINES.mock);
     expect(screen.getByTestId("mode").textContent).toBe("Mock");
     fireEvent.change(mode, { target: { value: "real" } });
     await waitFor(() => expect(document.querySelectorAll(".region").length).toBe(2));
