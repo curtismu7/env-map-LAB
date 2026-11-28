@@ -11,13 +11,15 @@ import VerifyMark from "./components/VerifyMark.jsx";
 import DiagramView from "./components/DiagramView.jsx";
 import MapView from "./components/MapView.jsx";
 import FlowsView from "./components/FlowsView.jsx";
+import ModeModal from "./mode-modal/ModeModal.jsx";
 
 export { parseRoute };
 
-export const BANNER = {
-  mock: "Mock: a made-up sample (a laptop, two namespaces and two SaaS services). Every name and host in it is fictional. Nothing is read from your machines and nothing is fetched from the network.",
-  real: "Real: a snapshot of your own machines (ENV_MAP_SNAPSHOT), read-only, loopback only. It names real hosts and workloads, so do not share this screen with a customer.",
-  unknown: "Mode unknown: the server did not answer. Nothing is shown until it does.",
+// The Real-or-mock modal's lines (shared/mode-modal): what the old banner said, shortened. `unknown` is the server not answering: the modal reads MOCK then.
+export const MODE_LINES = {
+  mock: "A made-up sample: a laptop, two namespaces and two SaaS services, every name and host fictional. Nothing is read from your machines and nothing is fetched from the network.",
+  real: "A snapshot of your own machines (ENV_MAP_SNAPSHOT), read-only, loopback only. It names real hosts and workloads, so do not share this screen with a customer.",
+  unknown: "Mode unknown: the server did not answer, so this reads as MOCK. Nothing is shown until it does.",
 };
 export const AFTER_NOTE = "After: Kubernetes for servers only, every front end in Docker on the local machine. Computed from each workload's role; it is a what-if, not a plan. A role guessed from the workload's name is marked \"by name, unverified\".";
 
@@ -83,7 +85,7 @@ export default function App() {
   }
 
   const realHint = info && !info.realAvailable ? info.realHint || "Real is not configured. Mock keeps working." : "";
-  const banner = info === undefined ? "Loading..." : info === null ? BANNER.unknown : real ? BANNER.real : BANNER.mock;
+  const modeLines = { mock: info === null ? MODE_LINES.unknown : MODE_LINES.mock, real: MODE_LINES.real };
   const view = map && map.views ? map.views[route.view] : null;
   const takenAt = map?.takenAt ? map.takenAt.replace("T", " ").replace(/:\d\d(\.\d+)?Z$/, "Z").replace("Z", " UTC") : "";
 
@@ -109,7 +111,6 @@ export default function App() {
         </span>
       </header>
       <main className="page page--wide" id="main" tabIndex={-1}>
-        <div className="banner" role="note" data-testid="banner" data-state={real ? "live" : undefined}>{banner}</div>
         {realHint && <p className="muted" id="real-hint" data-testid="real-hint">{realHint}</p>}
         {switchError && <p className="field-error" role="alert" data-testid="switch-error">{switchError}</p>}
         <div className="toolbar">
@@ -146,6 +147,7 @@ export default function App() {
             : <DiagramView key={`${info?.source}|${map.takenAt}|${route.view}`} view={view} viewName={route.view} resetNonce={resetNonce} />}
       </main>
       <TalkTrackDialog isOpen={talkOpen} onClose={() => setTalkOpen(false)} talk={talkSteps} />
+      <ModeModal mode={real ? "real" : "mock"} lines={modeLines} storageKey="envmap-mode" />
 
     </div>
   );
